@@ -40,13 +40,3 @@ public class Appointment {
 
 }
 
-
-/*
--ID
--CUSTOMER_ID
--START_DATETIME
--STATUS
--NOTES
--CREATED_AT
--UPDATED_AT
-*/
