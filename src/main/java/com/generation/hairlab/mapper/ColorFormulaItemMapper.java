@@ -1,16 +1,12 @@
 package com.generation.hairlab.mapper;
 
-import java.util.Collections;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
 import com.generation.hairlab.dto.ColorFormulaItemDto;
 import com.generation.hairlab.model.ColorFormulaItem;
-import com.generation.hairlab.model.HairDye;
 
 /**
  * Mapper MapStruct utilizzato per convertire ColorFormulaItem
@@ -27,7 +23,6 @@ public interface ColorFormulaItemMapper {
 
     /** Converte ColorFormulaItem in ColorFormulaItemDto. */
     @Mapping(target = "colorFormulaId", source = "colorFormula.id")
-    @Mapping(target = "hairDyeIds", source = "hairDyes")
     ColorFormulaItemDto toDto(ColorFormulaItem entity);
 
     /** Converte una lista di ColorFormulaItem in DTO. */
@@ -47,19 +42,4 @@ public interface ColorFormulaItemMapper {
     /** Converte una lista di ColorFormulaItemDto in Entity. */
     List<ColorFormulaItem> toEntityList(List<ColorFormulaItemDto> dtos);
 
-    /**
-     * Metodo di supporto per convertire Set<HairDye> in Set<Integer>.
-     *
-     * @param hairDyes tinte associate all'item
-     * @return insieme degli identificativi delle tinte
-     */
-    default Set<Integer> mapHairDyesToIds(Set<HairDye> hairDyes) {
-        if (hairDyes == null) {
-            return Collections.emptySet();
-        }
-
-        return hairDyes.stream()
-                .map(HairDye::getId)
-                .collect(Collectors.toSet());
-    }
 }

@@ -33,9 +33,9 @@ public class ColorFormulaItemService {
 
     private final ColorFormulaRepository colorFormulaRepository;
 
-    private HairDyeRepository hairDyeRepository;
+    private final HairDyeRepository hairDyeRepository;
 
-    private ColorFormulaItemMapper colorFormulaItemMapper;
+    private final ColorFormulaItemMapper colorFormulaItemMapper;
 
     /** Restituisce tutti gli elementi delle formule. */
     public List<ColorFormulaItemDto> findAll() {

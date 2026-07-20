@@ -39,7 +39,7 @@ public class AppointmentItemService {
 
     private final EmployeeRepository employeeRepository;
 
-    private AppointmentItemMapper appointmentItemMapper;
+    private final AppointmentItemMapper appointmentItemMapper;
 
     /** Restituisce tutti gli item. */
     public List<AppointmentItemDto> findAll() {

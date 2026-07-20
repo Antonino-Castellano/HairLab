@@ -1,13 +1,11 @@
 package com.generation.hairlab.mapper;
 
-import java.util.Collections;
 import java.util.List;
 
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
 import com.generation.hairlab.dto.CustomerDto;
-import com.generation.hairlab.model.Appointment;
 import com.generation.hairlab.model.Customer;
 
 /**
@@ -27,7 +25,6 @@ public interface CustomerMapper {
      * @param entity Entity da convertire
      * @return DTO corrispondente
      */
-    @Mapping(target = "appointmentIds", source = "appointments")
     CustomerDto toDto(Customer entity);
 
     /**
@@ -65,20 +62,4 @@ public interface CustomerMapper {
      */
     List<Customer> toEntityList(List<CustomerDto> dtos);
 
-    /**
-     * Metodo di supporto usato da MapStruct per convertire
-     * List<Appointment> in List<Integer>.
-     *
-     * @param appointments appuntamenti associati al cliente
-     * @return lista degli identificativi
-     */
-    default List<Integer> mapAppointmentsToIds(List<Appointment> appointments) {
-        if (appointments == null) {
-            return Collections.emptyList();
-        }
-
-        return appointments.stream()
-                .map(Appointment::getId)
-                .toList();
-    }
 }
