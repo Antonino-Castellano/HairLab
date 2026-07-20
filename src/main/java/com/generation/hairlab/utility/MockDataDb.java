@@ -39,80 +39,73 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 
 /**
- * Classe utilizzata per popolare automaticamente il database con dati mock
- * all'avvio dell'applicazione Spring Boot.
+ * Classe utilizzata per popolare automaticamente il database HairLab
+ * con dati mock all'avvio dell'applicazione.
  *
- * Implementa CommandLineRunner: il metodo run() viene eseguito automaticamente
- * dopo l'avvio del contesto Spring e dopo l'inizializzazione di JPA/Hibernate.
+ * Implementa CommandLineRunner, quindi il metodo run() viene eseguito
+ * automaticamente dopo l'avvio del contesto Spring.
  *
- * I dati vengono inseriti rispettando l'ordine delle relazioni:
+ * I dati vengono creati rispettando l'ordine delle dipendenze tra Entity:
  *
- * 1. Employee, Customer e ProductCategory
- * 2. SalonProduct e HairDye
- * 3. HairProfile
- * 4. Appointment
- * 5. AppointmentItem
- * 6. Consultation
- * 7. ColorFormula
- * 8. ColorFormulaItem
+ * 1. Employee
+ * 2. Customer
+ * 3. ProductCategory
+ * 4. SalonProduct
+ * 5. HairDye
+ * 6. HairProfile
+ * 7. Appointment
+ * 8. AppointmentItem
+ * 9. Consultation
+ * 10. ColorFormula
+ * 11. ColorFormulaItem
  *
- * Questo ordine è importante perché non è possibile, ad esempio, creare un
- * AppointmentItem che fa riferimento a un Appointment, Employee o SalonProduct
- * che non sono ancora stati salvati nel database.
+ * Questo ordine è necessario perché le Entity che possiedono foreign key
+ * devono essere create solamente dopo le Entity a cui fanno riferimento.
  *
- * La classe verifica inoltre che il database sia vuoto prima di inserire i
- * dati, evitando duplicazioni a ogni riavvio dell'applicazione.
+ * Prima del caricamento viene verificato che il database sia vuoto,
+ * così i dati mock non vengono duplicati a ogni riavvio.
  */
 @Component
 public class MockDataDb implements CommandLineRunner {
 
     /**
-     * EntityManager permette di salvare direttamente le Entity tramite JPA.
-     *
-     * In questa fase del progetto è utile perché non richiede di avere già
-     * creato un Repository separato per ogni Entity.
-     *
-     * Quando saranno disponibili tutti i Repository, sarà eventualmente
-     * possibile riscrivere il seeder utilizzando i repository stessi.
+     * EntityManager utilizzato per salvare direttamente le Entity
+     * tramite JPA/Hibernate.
      */
     @PersistenceContext
     private EntityManager entityManager;
 
-
     /**
-     * Metodo eseguito automaticamente da Spring Boot all'avvio.
+     * Metodo eseguito automaticamente da Spring Boot dopo l'avvio
+     * dell'applicazione.
      *
-     * @param args eventuali argomenti passati all'applicazione.
+     * @param args eventuali argomenti passati all'applicazione
      */
     @Override
     @Transactional
     public void run(String... args) {
 
         /*
-         * Evita di inserire nuovamente i dati mock se il database
-         * contiene già dati applicativi.
+         * Se il database contiene già dati, il caricamento viene saltato
+         * per evitare duplicazioni e violazioni dei vincoli UNIQUE.
          */
         if (!isDatabaseEmpty()) {
 
             System.out.println(
-                "HairLab MockDataDb: database già popolato, caricamento mock ignorato."
+                "HairLab MockDataDb: database già popolato. Mock non caricati."
             );
 
             return;
         }
 
         System.out.println(
-            "HairLab MockDataDb: creazione dati mock..."
+            "HairLab MockDataDb: caricamento dati mock..."
         );
-
 
         /*
          * ============================================================
-         * 1. DIPENDENTI
+         * 1. EMPLOYEE
          * ============================================================
-         *
-         * Vengono creati prima degli appuntamenti e delle consulenze
-         * perché entrambe queste Entity fanno riferimento a Employee.
          */
 
         Employee anna = new Employee();
@@ -121,13 +114,17 @@ public class MockDataDb implements CommandLineRunner {
         anna.setLastName("Rossi");
         anna.setEmail("anna.rossi@hairlab.mock");
         anna.setTelephoneNumber("3331000001");
-        anna.setJobTitle(JobTitle.COLORIST);
+
+        anna.setJobTitle(
+            JobTitle.COLORIST
+        );
 
         anna.setSpecializations(
             new HashSet<>(
                 Set.of(
                     Specialization.HAIR_COLOR,
                     Specialization.BALAYAGE,
+                    Specialization.HIGHLIGHTS,
                     Specialization.COLOR_CORRECTION,
                     Specialization.BLEACHING
                 )
@@ -141,7 +138,8 @@ public class MockDataDb implements CommandLineRunner {
         anna.setActive(true);
 
         anna.setNotes(
-            "Colorista specializzata in balayage e correzioni colore."
+            "Colorista specializzata in balayage, schiariture "
+            + "e correzioni colore."
         );
 
         entityManager.persist(anna);
@@ -153,7 +151,10 @@ public class MockDataDb implements CommandLineRunner {
         luca.setLastName("Bianchi");
         luca.setEmail("luca.bianchi@hairlab.mock");
         luca.setTelephoneNumber("3331000002");
-        luca.setJobTitle(JobTitle.HAIR_STYLIST);
+
+        luca.setJobTitle(
+            JobTitle.HAIR_STYLIST
+        );
 
         luca.setSpecializations(
             new HashSet<>(
@@ -162,7 +163,8 @@ public class MockDataDb implements CommandLineRunner {
                     Specialization.MENS_CUT,
                     Specialization.PIXIE_CUT,
                     Specialization.BOB_CUT,
-                    Specialization.BLOW_DRY
+                    Specialization.BLOW_DRY,
+                    Specialization.STYLING
                 )
             )
         );
@@ -174,7 +176,7 @@ public class MockDataDb implements CommandLineRunner {
         luca.setActive(true);
 
         luca.setNotes(
-            "Hair stylist specializzato in taglio e styling."
+            "Hair stylist specializzato in taglio, bob, pixie e styling."
         );
 
         entityManager.persist(luca);
@@ -186,7 +188,10 @@ public class MockDataDb implements CommandLineRunner {
         marco.setLastName("Verdi");
         marco.setEmail("marco.verdi@hairlab.mock");
         marco.setTelephoneNumber("3331000003");
-        marco.setJobTitle(JobTitle.BARBER);
+
+        marco.setJobTitle(
+            JobTitle.BARBER
+        );
 
         marco.setSpecializations(
             new HashSet<>(
@@ -205,7 +210,7 @@ public class MockDataDb implements CommandLineRunner {
         marco.setActive(true);
 
         marco.setNotes(
-            "Barber specializzato in taglio uomo e barba."
+            "Barber specializzato in taglio uomo, barba e rasatura."
         );
 
         entityManager.persist(marco);
@@ -213,7 +218,7 @@ public class MockDataDb implements CommandLineRunner {
 
         /*
          * ============================================================
-         * 2. CLIENTI
+         * 2. CUSTOMER
          * ============================================================
          */
 
@@ -291,14 +296,16 @@ public class MockDataDb implements CommandLineRunner {
 
         /*
          * ============================================================
-         * 3. CATEGORIE DEI SERVIZI
+         * 3. PRODUCT CATEGORY
          * ============================================================
          */
 
         ProductCategory haircutCategory = new ProductCategory();
 
         haircutCategory.setName("TAGLIO");
-        haircutCategory.setDesc("Servizi professionali di taglio.");
+        haircutCategory.setDesc(
+            "Servizi professionali di taglio."
+        );
         haircutCategory.setActive(true);
 
         entityManager.persist(haircutCategory);
@@ -307,7 +314,9 @@ public class MockDataDb implements CommandLineRunner {
         ProductCategory colorCategory = new ProductCategory();
 
         colorCategory.setName("COLORE");
-        colorCategory.setDesc("Servizi tecnici di colorazione e schiaritura.");
+        colorCategory.setDesc(
+            "Servizi tecnici di colorazione e schiaritura."
+        );
         colorCategory.setActive(true);
 
         entityManager.persist(colorCategory);
@@ -316,7 +325,9 @@ public class MockDataDb implements CommandLineRunner {
         ProductCategory stylingCategory = new ProductCategory();
 
         stylingCategory.setName("STYLING");
-        stylingCategory.setDesc("Servizi di piega e styling.");
+        stylingCategory.setDesc(
+            "Servizi di piega e styling."
+        );
         stylingCategory.setActive(true);
 
         entityManager.persist(stylingCategory);
@@ -325,7 +336,9 @@ public class MockDataDb implements CommandLineRunner {
         ProductCategory treatmentCategory = new ProductCategory();
 
         treatmentCategory.setName("TRATTAMENTI");
-        treatmentCategory.setDesc("Trattamenti professionali per capelli e cute.");
+        treatmentCategory.setDesc(
+            "Trattamenti professionali per capelli e cute."
+        );
         treatmentCategory.setActive(true);
 
         entityManager.persist(treatmentCategory);
@@ -333,17 +346,24 @@ public class MockDataDb implements CommandLineRunner {
 
         /*
          * ============================================================
-         * 4. SERVIZI DEL SALONE
+         * 4. SALON PRODUCT
          * ============================================================
-         *
-         * Ogni SalonProduct appartiene a una ProductCategory.
          */
 
         SalonProduct womensCut = new SalonProduct();
 
-        womensCut.setProductCategory(haircutCategory);
-        womensCut.setName("Taglio donna");
-        womensCut.setDesc("Taglio personalizzato con consulenza iniziale.");
+        womensCut.setProductCategory(
+            haircutCategory
+        );
+
+        womensCut.setName(
+            "Taglio donna"
+        );
+
+        womensCut.setDesc(
+            "Taglio personalizzato con consulenza iniziale."
+        );
+
         womensCut.setDuration(45);
         womensCut.setBasePrice(35.00);
         womensCut.setActive(true);
@@ -351,12 +371,40 @@ public class MockDataDb implements CommandLineRunner {
         entityManager.persist(womensCut);
 
 
+        SalonProduct mensCut = new SalonProduct();
+
+        mensCut.setProductCategory(
+            haircutCategory
+        );
+
+        mensCut.setName(
+            "Taglio uomo"
+        );
+
+        mensCut.setDesc(
+            "Taglio uomo personalizzato."
+        );
+
+        mensCut.setDuration(30);
+        mensCut.setBasePrice(25.00);
+        mensCut.setActive(true);
+
+        entityManager.persist(mensCut);
+
+
         SalonProduct balayage = new SalonProduct();
 
-        balayage.setProductCategory(colorCategory);
-        balayage.setName("Balayage");
+        balayage.setProductCategory(
+            colorCategory
+        );
+
+        balayage.setName(
+            "Balayage"
+        );
+
         balayage.setDesc(
-            "Servizio di schiaritura personalizzata con tecnica balayage."
+            "Servizio di schiaritura personalizzata "
+            + "con tecnica balayage."
         );
 
         balayage.setDuration(180);
@@ -368,8 +416,14 @@ public class MockDataDb implements CommandLineRunner {
 
         SalonProduct fullColor = new SalonProduct();
 
-        fullColor.setProductCategory(colorCategory);
-        fullColor.setName("Colore completo");
+        fullColor.setProductCategory(
+            colorCategory
+        );
+
+        fullColor.setName(
+            "Colore completo"
+        );
+
         fullColor.setDesc(
             "Colorazione completa di radici, lunghezze e punte."
         );
@@ -383,9 +437,18 @@ public class MockDataDb implements CommandLineRunner {
 
         SalonProduct blowDry = new SalonProduct();
 
-        blowDry.setProductCategory(stylingCategory);
-        blowDry.setName("Piega");
-        blowDry.setDesc("Lavaggio e piega professionale.");
+        blowDry.setProductCategory(
+            stylingCategory
+        );
+
+        blowDry.setName(
+            "Piega"
+        );
+
+        blowDry.setDesc(
+            "Lavaggio e piega professionale."
+        );
+
         blowDry.setDuration(40);
         blowDry.setBasePrice(25.00);
         blowDry.setActive(true);
@@ -395,8 +458,14 @@ public class MockDataDb implements CommandLineRunner {
 
         SalonProduct reconstruction = new SalonProduct();
 
-        reconstruction.setProductCategory(treatmentCategory);
-        reconstruction.setName("Trattamento ricostruttivo");
+        reconstruction.setProductCategory(
+            treatmentCategory
+        );
+
+        reconstruction.setName(
+            "Trattamento ricostruttivo"
+        );
+
         reconstruction.setDesc(
             "Trattamento professionale per capelli sensibilizzati."
         );
@@ -410,7 +479,7 @@ public class MockDataDb implements CommandLineRunner {
 
         /*
          * ============================================================
-         * 5. TINTE / PRODOTTI TECNICI
+         * 5. HAIR DYE
          * ============================================================
          */
 
@@ -433,6 +502,7 @@ public class MockDataDb implements CommandLineRunner {
         );
 
         dye51.setSecondaryReflection(null);
+
         dye51.setActive(true);
 
         entityManager.persist(dye51);
@@ -457,6 +527,7 @@ public class MockDataDb implements CommandLineRunner {
         );
 
         dye60.setSecondaryReflection(null);
+
         dye60.setActive(true);
 
         entityManager.persist(dye60);
@@ -464,9 +535,17 @@ public class MockDataDb implements CommandLineRunner {
 
         HairDye toner81 = new HairDye();
 
-        toner81.setBrand("HairLab Professional");
-        toner81.setName("Toner cenere perla");
-        toner81.setCode("HL-8-ASH-PEARL");
+        toner81.setBrand(
+            "HairLab Professional"
+        );
+
+        toner81.setName(
+            "Toner cenere perla"
+        );
+
+        toner81.setCode(
+            "HL-8-ASH-PEARL"
+        );
 
         toner81.setProductType(
             ProductType.TONER
@@ -493,9 +572,6 @@ public class MockDataDb implements CommandLineRunner {
          * ============================================================
          * 6. HAIR PROFILE
          * ============================================================
-         *
-         * Ogni HairProfile viene creato dopo il relativo Customer,
-         * perché contiene una relazione OneToOne con esso.
          */
 
         HairProfile mariaProfile = new HairProfile();
@@ -631,20 +707,24 @@ public class MockDataDb implements CommandLineRunner {
 
         /*
          * ============================================================
-         * 7. APPUNTAMENTI
+         * 7. APPOINTMENT
          * ============================================================
          */
+
+        LocalDateTime appointment1Date =
+            LocalDateTime.now()
+                .minusDays(20)
+                .withHour(9)
+                .withMinute(0)
+                .withSecond(0)
+                .withNano(0);
 
         Appointment appointment1 = new Appointment();
 
         appointment1.setCustomer(maria);
 
         appointment1.setStartDateTime(
-            LocalDateTime.now().minusDays(20)
-                .withHour(9)
-                .withMinute(0)
-                .withSecond(0)
-                .withNano(0)
+            appointment1Date
         );
 
         appointment1.setStatus(
@@ -656,26 +736,30 @@ public class MockDataDb implements CommandLineRunner {
         );
 
         appointment1.setCreatedAt(
-            LocalDateTime.now().minusDays(30)
+            appointment1Date.minusDays(10)
         );
 
         appointment1.setUpdatedAt(
-            LocalDateTime.now().minusDays(20)
+            appointment1Date.plusHours(3)
         );
 
         entityManager.persist(appointment1);
 
+
+        LocalDateTime appointment2Date =
+            LocalDateTime.now()
+                .minusDays(10)
+                .withHour(14)
+                .withMinute(0)
+                .withSecond(0)
+                .withNano(0);
 
         Appointment appointment2 = new Appointment();
 
         appointment2.setCustomer(giulia);
 
         appointment2.setStartDateTime(
-            LocalDateTime.now().minusDays(10)
-                .withHour(14)
-                .withMinute(0)
-                .withSecond(0)
-                .withNano(0)
+            appointment2Date
         );
 
         appointment2.setStatus(
@@ -687,11 +771,11 @@ public class MockDataDb implements CommandLineRunner {
         );
 
         appointment2.setCreatedAt(
-            LocalDateTime.now().minusDays(18)
+            appointment2Date.minusDays(8)
         );
 
         appointment2.setUpdatedAt(
-            LocalDateTime.now().minusDays(10)
+            appointment2Date.plusHours(2)
         );
 
         entityManager.persist(appointment2);
@@ -701,81 +785,151 @@ public class MockDataDb implements CommandLineRunner {
          * ============================================================
          * 8. APPOINTMENT ITEM
          * ============================================================
-         *
-         * Vengono creati dopo Appointment, Employee e SalonProduct
-         * perché dipendono da tutte e tre queste Entity.
          */
 
-        AppointmentItem itemColor = new AppointmentItem();
+        AppointmentItem itemColor =
+            new AppointmentItem();
 
-        itemColor.setAppointment(appointment1);
-        itemColor.setSalonProduct(fullColor);
-        itemColor.setEmployee(anna);
+        itemColor.setAppointment(
+            appointment1
+        );
+
+        itemColor.setSalonProduct(
+            fullColor
+        );
+
+        itemColor.setEmployee(
+            anna
+        );
 
         itemColor.setScheduledTime(
-            appointment1.getStartDateTime()
+            appointment1Date
         );
 
         itemColor.setDuration(90);
-        itemColor.setAgreedPrice(65.00);
+
+        itemColor.setAgreedPrice(
+            65.00
+        );
 
         itemColor.setResultNotes(
-            "Colorazione uniforme con neutralizzazione dei riflessi caldi."
+            "Colorazione uniforme con neutralizzazione "
+            + "dei riflessi caldi."
         );
 
         itemColor.setCompletedAt(
-            appointment1.getStartDateTime().plusMinutes(90)
+            appointment1Date.plusMinutes(90)
         );
 
         entityManager.persist(itemColor);
 
 
-        AppointmentItem itemCutMaria = new AppointmentItem();
+        AppointmentItem itemCutMaria =
+            new AppointmentItem();
 
-        itemCutMaria.setAppointment(appointment1);
-        itemCutMaria.setSalonProduct(womensCut);
-        itemCutMaria.setEmployee(luca);
+        itemCutMaria.setAppointment(
+            appointment1
+        );
+
+        itemCutMaria.setSalonProduct(
+            womensCut
+        );
+
+        itemCutMaria.setEmployee(
+            luca
+        );
 
         itemCutMaria.setScheduledTime(
-            appointment1.getStartDateTime().plusMinutes(90)
+            appointment1Date.plusMinutes(90)
         );
 
         itemCutMaria.setDuration(45);
-        itemCutMaria.setAgreedPrice(35.00);
+
+        itemCutMaria.setAgreedPrice(
+            35.00
+        );
 
         itemCutMaria.setResultNotes(
             "Taglio bob leggermente graduato."
         );
 
         itemCutMaria.setCompletedAt(
-            appointment1.getStartDateTime().plusMinutes(135)
+            appointment1Date.plusMinutes(135)
         );
 
         entityManager.persist(itemCutMaria);
 
 
-        AppointmentItem itemCutGiulia = new AppointmentItem();
+        AppointmentItem itemCutGiulia =
+            new AppointmentItem();
 
-        itemCutGiulia.setAppointment(appointment2);
-        itemCutGiulia.setSalonProduct(womensCut);
-        itemCutGiulia.setEmployee(luca);
+        itemCutGiulia.setAppointment(
+            appointment2
+        );
+
+        itemCutGiulia.setSalonProduct(
+            womensCut
+        );
+
+        itemCutGiulia.setEmployee(
+            luca
+        );
 
         itemCutGiulia.setScheduledTime(
-            appointment2.getStartDateTime()
+            appointment2Date
         );
 
         itemCutGiulia.setDuration(45);
-        itemCutGiulia.setAgreedPrice(35.00);
+
+        itemCutGiulia.setAgreedPrice(
+            35.00
+        );
 
         itemCutGiulia.setResultNotes(
             "Taglio di mantenimento."
         );
 
         itemCutGiulia.setCompletedAt(
-            appointment2.getStartDateTime().plusMinutes(45)
+            appointment2Date.plusMinutes(45)
         );
 
         entityManager.persist(itemCutGiulia);
+
+
+        AppointmentItem itemBlowDryGiulia =
+            new AppointmentItem();
+
+        itemBlowDryGiulia.setAppointment(
+            appointment2
+        );
+
+        itemBlowDryGiulia.setSalonProduct(
+            blowDry
+        );
+
+        itemBlowDryGiulia.setEmployee(
+            luca
+        );
+
+        itemBlowDryGiulia.setScheduledTime(
+            appointment2Date.plusMinutes(45)
+        );
+
+        itemBlowDryGiulia.setDuration(40);
+
+        itemBlowDryGiulia.setAgreedPrice(
+            25.00
+        );
+
+        itemBlowDryGiulia.setResultNotes(
+            "Piega liscia con movimento naturale sulle punte."
+        );
+
+        itemBlowDryGiulia.setCompletedAt(
+            appointment2Date.plusMinutes(85)
+        );
+
+        entityManager.persist(itemBlowDryGiulia);
 
 
         /*
@@ -784,67 +938,104 @@ public class MockDataDb implements CommandLineRunner {
          * ============================================================
          */
 
-        Consultation mariaConsultation = new Consultation(
+        Consultation mariaConsultation =
+            new Consultation(
+                maria,
+                anna,
+                appointment1,
 
-            maria,
+                appointment1Date.minusDays(5),
 
-            anna,
+                ConsultationType.HAIR_COLOR,
 
-            appointment1,
+                "Ottenere un castano chiaro più freddo "
+                + "eliminando i riflessi dorati indesiderati.",
 
-            appointment1.getStartDateTime().minusDays(5),
+                "Capello precedentemente colorato, fibra fine "
+                + "e lunghezze sensibilizzate.",
 
-            ConsultationType.HAIR_COLOR,
+                "Base livello 6 con riflesso caldo-dorato.",
 
-            "Ottenere un castano chiaro più freddo eliminando "
-                + "i riflessi dorati indesiderati.",
+                FeasibilityStatus.FEASIBLE_WITH_LIMITATIONS,
 
-            "Capello precedentemente colorato, fibra fine e "
-                + "lunghezze sensibilizzate.",
+                "Possibile aumento della sensibilizzazione "
+                + "sulle lunghezze.",
 
-            "Base livello 6 con riflesso caldo-dorato.",
-
-            FeasibilityStatus.FEASIBLE_WITH_LIMITATIONS,
-
-            "Possibile aumento della sensibilizzazione sulle lunghezze.",
-
-            "Colorazione fredda controllata con trattamento "
+                "Colorazione fredda controllata con trattamento "
                 + "ricostruttivo finale.",
 
-            "Evitare schiariture aggressive nella stessa seduta."
+                "Evitare schiariture aggressive nella stessa seduta."
+            );
+
+        entityManager.persist(
+            mariaConsultation
         );
 
-        entityManager.persist(mariaConsultation);
 
+        Consultation giuliaConsultation =
+            new Consultation(
+                giulia,
+                luca,
+                appointment2,
 
-        Consultation giuliaConsultation = new Consultation(
+                appointment2Date.minusDays(3),
 
-            giulia,
+                ConsultationType.HAIR_CUT,
 
-            luca,
+                "Rinnovare la forma mantenendo una lunghezza media.",
 
-            appointment2,
+                "Capello naturale, sano e ad alta densità.",
 
-            appointment2.getStartDateTime().minusDays(3),
+                "Struttura liscia e fibra media.",
 
-            ConsultationType.HAIR_CUT,
+                FeasibilityStatus.FEASIBLE,
 
-            "Rinnovare la forma mantenendo una lunghezza media.",
+                "Nessun rischio tecnico rilevante.",
 
-            "Capello naturale, sano e ad alta densità.",
+                "Taglio strutturato con alleggerimento controllato.",
 
-            "Struttura liscia e fibra media.",
+                "Mantenere il volume naturale."
+            );
 
-            FeasibilityStatus.FEASIBLE,
-
-            "Nessun rischio tecnico rilevante.",
-
-            "Taglio strutturato con alleggerimento controllato.",
-
-            "Mantenere volume naturale."
+        entityManager.persist(
+            giuliaConsultation
         );
 
-        entityManager.persist(giuliaConsultation);
+
+        /*
+         * Consulenza senza appuntamento.
+         *
+         * Serve per verificare che la relazione Consultation -> Appointment
+         * possa essere null come previsto dal vostro Model.
+         */
+        Consultation saraConsultation =
+            new Consultation(
+                sara,
+                anna,
+                null,
+
+                LocalDateTime.now().minusDays(2),
+
+                ConsultationType.HAIR_COLOR,
+
+                "Valutare la possibilità di eseguire un balayage freddo.",
+
+                "Capello naturale con buona struttura.",
+
+                "Base naturale livello medio con lunghezze sane.",
+
+                FeasibilityStatus.FEASIBLE,
+
+                "Possibile lieve sensibilizzazione dopo la schiaritura.",
+
+                "Balayage progressivo con tonalizzazione finale.",
+
+                "Eseguire test preliminare della ciocca."
+            );
+
+        entityManager.persist(
+            saraConsultation
+        );
 
 
         /*
@@ -853,7 +1044,8 @@ public class MockDataDb implements CommandLineRunner {
          * ============================================================
          */
 
-        ColorFormula formulaMaria = new ColorFormula();
+        ColorFormula formulaMaria =
+            new ColorFormula();
 
         formulaMaria.setConsultation(
             mariaConsultation
@@ -868,8 +1060,8 @@ public class MockDataDb implements CommandLineRunner {
         );
 
         formulaMaria.setTargetResult(
-            "Castano chiaro freddo livello 5-6 con neutralizzazione "
-                + "dei riflessi caldi."
+            "Castano chiaro freddo livello 5-6 "
+            + "con neutralizzazione dei riflessi caldi."
         );
 
         formulaMaria.setVolumeDeveloper(
@@ -885,26 +1077,28 @@ public class MockDataDb implements CommandLineRunner {
         );
 
         formulaMaria.setNotes(
-            "Applicazione uniforme con controllo delle lunghezze porose."
+            "Applicazione uniforme con controllo "
+            + "delle lunghezze porose."
         );
 
         formulaMaria.setCreatedAt(
-            appointment1.getStartDateTime().minusDays(5)
+            appointment1Date.minusDays(5)
         );
 
-        entityManager.persist(formulaMaria);
+        entityManager.persist(
+            formulaMaria
+        );
 
 
         /*
          * ============================================================
-         * 11. COLOR FORMULA ITEMS
+         * 11. COLOR FORMULA ITEM
          * ============================================================
          *
-         * Ogni item rappresenta qui un componente della formula.
+         * Il vostro Model attuale permette Set<HairDye>.
          *
-         * Il vostro model permette un Set<HairDye>; nei mock utilizziamo
-         * un solo HairDye per item così la quantità rimane chiaramente
-         * riferita a uno specifico prodotto.
+         * Nei mock viene utilizzato UN SOLO HairDye per ogni item,
+         * così quantity rimane riferita chiaramente a un solo prodotto.
          */
 
         ColorFormulaItem formulaItem51 =
@@ -916,17 +1110,23 @@ public class MockDataDb implements CommandLineRunner {
 
         formulaItem51.setHairDyes(
             new HashSet<>(
-                Set.of(dye51)
+                Set.of(
+                    dye51
+                )
             )
         );
 
-        formulaItem51.setQuantity(30.0);
+        formulaItem51.setQuantity(
+            30.0
+        );
 
         formulaItem51.setNotes(
             "Componente principale freddo."
         );
 
-        entityManager.persist(formulaItem51);
+        entityManager.persist(
+            formulaItem51
+        );
 
 
         ColorFormulaItem formulaItem60 =
@@ -938,47 +1138,48 @@ public class MockDataDb implements CommandLineRunner {
 
         formulaItem60.setHairDyes(
             new HashSet<>(
-                Set.of(dye60)
+                Set.of(
+                    dye60
+                )
             )
         );
 
-        formulaItem60.setQuantity(10.0);
+        formulaItem60.setQuantity(
+            10.0
+        );
 
         formulaItem60.setNotes(
             "Componente naturale di supporto."
         );
 
-        entityManager.persist(formulaItem60);
+        entityManager.persist(
+            formulaItem60
+        );
 
 
         /*
-         * Forza Hibernate a sincronizzare le operazioni con il database
-         * prima della fine del metodo.
+         * Forza Hibernate a sincronizzare le INSERT con il database.
          *
-         * Non è sempre strettamente necessario, perché la transazione
-         * effettua comunque il commit alla fine, ma rende immediatamente
-         * evidenti eventuali errori di mapping o constraint durante il seed.
+         * In questo modo eventuali errori di foreign key, unique constraint
+         * o mapping vengono rilevati immediatamente durante il caricamento.
          */
         entityManager.flush();
-
 
         System.out.println(
             "HairLab MockDataDb: dati mock creati correttamente."
         );
     }
 
-
     /**
-     * Controlla se il database contiene già dati HairLab.
+     * Verifica se il database contiene già dati principali HairLab.
      *
-     * La verifica impedisce che il metodo run() inserisca nuovamente gli stessi
-     * mock a ogni riavvio dell'applicazione.
+     * Se almeno una delle tabelle principali contiene record,
+     * il caricamento automatico viene saltato.
      *
-     * È sufficiente che una delle principali tabelle applicative contenga
-     * record per considerare il database già inizializzato.
+     * Questa scelta evita soprattutto errori causati dai campi UNIQUE
+     * come email, nome categoria, nome servizio e codice HairDye.
      *
-     * @return true se tutte le principali tabelle controllate sono vuote,
-     *         false se è già presente almeno un dato.
+     * @return true se le principali tabelle controllate sono tutte vuote
      */
     private boolean isDatabaseEmpty() {
 
