@@ -4,23 +4,21 @@ import java.util.List;
 
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import org.mapstruct.MappingTarget;
 
 import com.generation.hairlab.dto.AppointmentItemDto;
 import com.generation.hairlab.model.AppointmentItem;
 
 /**
- * Mapper MapStruct per AppointmentItem.
+ * Mapper MapStruct utilizzato per convertire AppointmentItem
+ * in AppointmentItemDto e viceversa.
  *
- * Le tre relazioni ManyToOne vengono rappresentate nel DTO tramite:
- * - appointmentId
- * - salonProductId
- * - employeeId
+ * Le relazioni con Appointment, SalonProduct ed Employee vengono
+ * rappresentate nel DTO tramite i rispettivi identificativi.
  *
- * Nel percorso inverso le Entity collegate vengono ignorate: il Service
- * deve recuperarle dai rispettivi Repository e assegnarle all'item.
+ * Nel percorso inverso le Entity collegate vengono ignorate:
+ * il Service deve recuperarle dai rispettivi Repository.
  */
-@Mapper(config = HairLabMapperConfig.class)
+@Mapper(componentModel = "spring")
 public interface AppointmentItemMapper {
 
     /** Converte AppointmentItem in AppointmentItemDto. */
@@ -32,17 +30,18 @@ public interface AppointmentItemMapper {
     /** Converte una lista di AppointmentItem in DTO. */
     List<AppointmentItemDto> toDtoList(List<AppointmentItem> entities);
 
-    /** Crea un AppointmentItem senza risolvere automaticamente le relazioni. */
+    /**
+     * Converte AppointmentItemDto in una nuova Entity AppointmentItem.
+     *
+     * Le relazioni vengono ignorate perché devono essere risolte
+     * nel Service tramite gli ID presenti nel DTO.
+     */
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "appointment", ignore = true)
     @Mapping(target = "salonProduct", ignore = true)
     @Mapping(target = "employee", ignore = true)
     AppointmentItem toEntity(AppointmentItemDto dto);
 
-    /** Aggiorna l'item senza modificare automaticamente ID e relazioni. */
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "appointment", ignore = true)
-    @Mapping(target = "salonProduct", ignore = true)
-    @Mapping(target = "employee", ignore = true)
-    void updateEntityFromDto(AppointmentItemDto dto, @MappingTarget AppointmentItem entity);
+    /** Converte una lista di AppointmentItemDto in Entity. */
+    List<AppointmentItem> toEntityList(List<AppointmentItemDto> dtos);
 }

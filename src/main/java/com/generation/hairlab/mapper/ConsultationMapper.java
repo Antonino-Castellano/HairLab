@@ -4,21 +4,18 @@ import java.util.List;
 
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import org.mapstruct.MappingTarget;
 
 import com.generation.hairlab.dto.ConsultationDto;
 import com.generation.hairlab.model.Consultation;
 
 /**
- * Mapper MapStruct per Consultation.
+ * Mapper MapStruct utilizzato per convertire Consultation
+ * in ConsultationDto e viceversa.
  *
- * Customer, Employee e Appointment vengono convertiti nei rispettivi ID
- * quando la Entity viene trasformata in DTO.
- *
- * Nel percorso inverso le relazioni non vengono create dal mapper:
- * devono essere risolte dal Service tramite i Repository.
+ * Customer, Employee e Appointment vengono rappresentati nel DTO
+ * tramite i rispettivi identificativi.
  */
-@Mapper(config = HairLabMapperConfig.class)
+@Mapper(componentModel = "spring")
 public interface ConsultationMapper {
 
     /** Converte Consultation in ConsultationDto. */
@@ -30,17 +27,18 @@ public interface ConsultationMapper {
     /** Converte una lista di Consultation in DTO. */
     List<ConsultationDto> toDtoList(List<Consultation> entities);
 
-    /** Crea una Consultation senza risolvere automaticamente le relazioni. */
+    /**
+     * Converte ConsultationDto in una nuova Entity Consultation.
+     *
+     * Le relazioni vengono ignorate perché devono essere recuperate
+     * nel Service tramite customerId, employeeId e appointmentId.
+     */
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "customer", ignore = true)
     @Mapping(target = "employee", ignore = true)
     @Mapping(target = "appointment", ignore = true)
     Consultation toEntity(ConsultationDto dto);
 
-    /** Aggiorna i campi della Consultation lasciando ID e relazioni al Service. */
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "customer", ignore = true)
-    @Mapping(target = "employee", ignore = true)
-    @Mapping(target = "appointment", ignore = true)
-    void updateEntityFromDto(ConsultationDto dto, @MappingTarget Consultation entity);
+    /** Converte una lista di ConsultationDto in Entity. */
+    List<Consultation> toEntityList(List<ConsultationDto> dtos);
 }

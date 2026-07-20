@@ -4,19 +4,19 @@ import java.util.List;
 
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import org.mapstruct.MappingTarget;
 
 import com.generation.hairlab.dto.AppointmentDto;
 import com.generation.hairlab.model.Appointment;
 
 /**
- * Mapper MapStruct per Appointment.
+ * Mapper MapStruct utilizzato per convertire Appointment
+ * in AppointmentDto e viceversa.
  *
  * La relazione con Customer viene rappresentata nel DTO tramite customerId.
- * Nel percorso inverso il Customer non viene creato automaticamente:
- * sarà il Service a recuperarlo tramite CustomerRepository.
+ * Nel percorso DTO -> Entity il Customer viene ignorato perché deve essere
+ * recuperato dal database nel Service.
  */
-@Mapper(config = HairLabMapperConfig.class)
+@Mapper(componentModel = "spring")
 public interface AppointmentMapper {
 
     /** Converte Appointment in AppointmentDto. */
@@ -27,9 +27,10 @@ public interface AppointmentMapper {
     List<AppointmentDto> toDtoList(List<Appointment> entities);
 
     /**
-     * Crea un Appointment dai dati semplici del DTO.
+     * Converte AppointmentDto in una nuova Entity Appointment.
      *
-     * customer, id e timestamp gestiti dal backend vengono ignorati.
+     * customer, id, createdAt e updatedAt vengono ignorati perché
+     * devono essere gestiti dal Service/backend.
      */
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "customer", ignore = true)
@@ -37,13 +38,6 @@ public interface AppointmentMapper {
     @Mapping(target = "updatedAt", ignore = true)
     Appointment toEntity(AppointmentDto dto);
 
-    /**
-     * Aggiorna un Appointment esistente senza modificare automaticamente
-     * relazione, ID e timestamp tecnici.
-     */
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "customer", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
-    void updateEntityFromDto(AppointmentDto dto, @MappingTarget Appointment entity);
+    /** Converte una lista di AppointmentDto in Entity. */
+    List<Appointment> toEntityList(List<AppointmentDto> dtos);
 }

@@ -4,37 +4,34 @@ import java.util.List;
 
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import org.mapstruct.MappingTarget;
 
 import com.generation.hairlab.dto.EmployeeDto;
 import com.generation.hairlab.model.Employee;
 
 /**
- * Mapper MapStruct per la conversione tra Employee ed EmployeeDto.
+ * Mapper MapStruct utilizzato per convertire Employee in EmployeeDto
+ * e viceversa.
  *
- * Tutti i campi funzionali hanno lo stesso significato nei due oggetti,
- * quindi MapStruct può mapparli automaticamente per nome e tipo.
+ * I campi semplici e gli enum hanno gli stessi nomi e tipi in Entity e DTO,
+ * quindi MapStruct li converte automaticamente.
  */
-@Mapper(config = HairLabMapperConfig.class)
+@Mapper(componentModel = "spring")
 public interface EmployeeMapper {
 
     /** Converte Employee in EmployeeDto. */
     EmployeeDto toDto(Employee entity);
 
-    /** Converte una lista di Employee in DTO. */
+    /** Converte una lista di Employee in una lista di EmployeeDto. */
     List<EmployeeDto> toDtoList(List<Employee> entities);
 
     /**
-     * Crea una nuova Employee dal DTO.
+     * Converte EmployeeDto in una nuova Entity Employee.
      *
-     * L'ID viene ignorato perché generato dal database.
+     * L'id viene ignorato perché generato dal database.
      */
     @Mapping(target = "id", ignore = true)
     Employee toEntity(EmployeeDto dto);
 
-    /**
-     * Aggiorna una Employee esistente senza modificarne l'identificativo.
-     */
-    @Mapping(target = "id", ignore = true)
-    void updateEntityFromDto(EmployeeDto dto, @MappingTarget Employee entity);
+    /** Converte una lista di EmployeeDto in una lista di Employee. */
+    List<Employee> toEntityList(List<EmployeeDto> dtos);
 }

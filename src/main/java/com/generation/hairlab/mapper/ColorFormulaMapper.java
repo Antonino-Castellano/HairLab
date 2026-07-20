@@ -4,19 +4,18 @@ import java.util.List;
 
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import org.mapstruct.MappingTarget;
 
 import com.generation.hairlab.dto.ColorFormulaDto;
 import com.generation.hairlab.model.ColorFormula;
 
 /**
- * Mapper MapStruct per ColorFormula.
+ * Mapper MapStruct utilizzato per convertire ColorFormula
+ * in ColorFormulaDto e viceversa.
  *
- * Le relazioni con Consultation e AppointmentItem vengono esposte nel DTO
- * come identificativi. Nel percorso DTO -> Entity tali relazioni sono
- * ignorate e devono essere risolte nel Service.
+ * Le relazioni con Consultation e AppointmentItem vengono rappresentate
+ * nel DTO tramite identificativi.
  */
-@Mapper(config = HairLabMapperConfig.class)
+@Mapper(componentModel = "spring")
 public interface ColorFormulaMapper {
 
     /** Converte ColorFormula in ColorFormulaDto. */
@@ -28,9 +27,10 @@ public interface ColorFormulaMapper {
     List<ColorFormulaDto> toDtoList(List<ColorFormula> entities);
 
     /**
-     * Crea una ColorFormula dai dati del DTO.
+     * Converte ColorFormulaDto in una nuova Entity ColorFormula.
      *
-     * createdAt viene ignorato perché deve essere valorizzato dal backend.
+     * consultation e appointmentItem vengono ignorati perché devono
+     * essere risolti nel Service. createdAt viene gestito dal backend.
      */
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "consultation", ignore = true)
@@ -38,13 +38,6 @@ public interface ColorFormulaMapper {
     @Mapping(target = "createdAt", ignore = true)
     ColorFormula toEntity(ColorFormulaDto dto);
 
-    /**
-     * Aggiorna una formula senza cambiare automaticamente ID,
-     * relazioni o data originaria di creazione.
-     */
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "consultation", ignore = true)
-    @Mapping(target = "appointmentItem", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
-    void updateEntityFromDto(ColorFormulaDto dto, @MappingTarget ColorFormula entity);
+    /** Converte una lista di ColorFormulaDto in Entity. */
+    List<ColorFormula> toEntityList(List<ColorFormulaDto> dtos);
 }

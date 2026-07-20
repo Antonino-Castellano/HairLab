@@ -7,23 +7,22 @@ import java.util.stream.Collectors;
 
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import org.mapstruct.MappingTarget;
 
 import com.generation.hairlab.dto.ColorFormulaItemDto;
 import com.generation.hairlab.model.ColorFormulaItem;
 import com.generation.hairlab.model.HairDye;
 
 /**
- * Mapper MapStruct per ColorFormulaItem.
+ * Mapper MapStruct utilizzato per convertire ColorFormulaItem
+ * in ColorFormulaItemDto e viceversa.
  *
  * La relazione con ColorFormula viene rappresentata tramite colorFormulaId.
- * Il Set<HairDye> viene trasformato in Set<Integer> contenente soltanto
- * gli identificativi delle tinte.
+ * Il Set di HairDye viene trasformato in un Set di identificativi.
  *
- * Nel percorso DTO -> Entity le relazioni vengono ignorate perché il Service
- * deve recuperare ColorFormula e HairDye reali dai rispettivi Repository.
+ * Nel percorso inverso le relazioni vengono ignorate perché devono essere
+ * recuperate dal database nel Service.
  */
-@Mapper(config = HairLabMapperConfig.class)
+@Mapper(componentModel = "spring")
 public interface ColorFormulaItemMapper {
 
     /** Converte ColorFormulaItem in ColorFormulaItemDto. */
@@ -34,23 +33,25 @@ public interface ColorFormulaItemMapper {
     /** Converte una lista di ColorFormulaItem in DTO. */
     List<ColorFormulaItemDto> toDtoList(List<ColorFormulaItem> entities);
 
-    /** Crea un item senza risolvere automaticamente formula e tinte. */
+    /**
+     * Converte ColorFormulaItemDto in una nuova Entity ColorFormulaItem.
+     *
+     * ColorFormula e HairDye vengono ignorati perché devono essere
+     * recuperati tramite Repository nel Service.
+     */
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "colorFormula", ignore = true)
     @Mapping(target = "hairDyes", ignore = true)
     ColorFormulaItem toEntity(ColorFormulaItemDto dto);
 
-    /** Aggiorna i dati semplici dell'item lasciando le relazioni al Service. */
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "colorFormula", ignore = true)
-    @Mapping(target = "hairDyes", ignore = true)
-    void updateEntityFromDto(ColorFormulaItemDto dto, @MappingTarget ColorFormulaItem entity);
+    /** Converte una lista di ColorFormulaItemDto in Entity. */
+    List<ColorFormulaItem> toEntityList(List<ColorFormulaItemDto> dtos);
 
     /**
-     * Converte un insieme di Entity HairDye nei rispettivi identificativi.
+     * Metodo di supporto per convertire Set<HairDye> in Set<Integer>.
      *
      * @param hairDyes tinte associate all'item
-     * @return insieme degli ID
+     * @return insieme degli identificativi delle tinte
      */
     default Set<Integer> mapHairDyesToIds(Set<HairDye> hairDyes) {
         if (hairDyes == null) {

@@ -4,31 +4,27 @@ import java.util.List;
 
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import org.mapstruct.MappingTarget;
 
 import com.generation.hairlab.dto.ProductCategoryDto;
 import com.generation.hairlab.model.ProductCategory;
 
 /**
- * Mapper MapStruct per ProductCategory.
- *
- * Entity e DTO hanno gli stessi campi funzionali, quindi la conversione
- * principale viene generata automaticamente da MapStruct.
+ * Mapper MapStruct utilizzato per convertire ProductCategory
+ * in ProductCategoryDto e viceversa.
  */
-@Mapper(config = HairLabMapperConfig.class)
+@Mapper(componentModel = "spring")
 public interface ProductCategoryMapper {
 
     /** Converte ProductCategory in ProductCategoryDto. */
     ProductCategoryDto toDto(ProductCategory entity);
 
-    /** Converte una lista di categorie in DTO. */
+    /** Converte una lista di ProductCategory in DTO. */
     List<ProductCategoryDto> toDtoList(List<ProductCategory> entities);
 
-    /** Crea una nuova ProductCategory ignorando l'ID ricevuto. */
+    /** Converte ProductCategoryDto in una nuova Entity ProductCategory. */
     @Mapping(target = "id", ignore = true)
     ProductCategory toEntity(ProductCategoryDto dto);
 
-    /** Aggiorna una categoria esistente senza modificarne l'ID. */
-    @Mapping(target = "id", ignore = true)
-    void updateEntityFromDto(ProductCategoryDto dto, @MappingTarget ProductCategory entity);
+    /** Converte una lista di ProductCategoryDto in Entity. */
+    List<ProductCategory> toEntityList(List<ProductCategoryDto> dtos);
 }

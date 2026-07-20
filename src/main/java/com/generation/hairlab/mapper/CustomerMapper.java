@@ -3,50 +3,49 @@ package com.generation.hairlab.mapper;
 import java.util.Collections;
 import java.util.List;
 
+import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import org.mapstruct.MappingTarget;
 
 import com.generation.hairlab.dto.CustomerDto;
 import com.generation.hairlab.model.Appointment;
 import com.generation.hairlab.model.Customer;
 
-import org.mapstruct.Mapper;
-
 /**
- * Mapper MapStruct per la conversione tra Customer e CustomerDto.
+ * Mapper MapStruct utilizzato per convertire Customer in CustomerDto
+ * e viceversa.
  *
- * La lista di Appointment della Entity viene trasformata in una lista
- * di soli identificativi nel DTO. Nel percorso inverso la relazione viene
- * ignorata perché deve essere gestita dal Service e non dal mapper.
+ * La relazione con gli Appointment viene rappresentata nel DTO tramite
+ * una lista di identificativi, evitando di trasferire direttamente le Entity
+ * e prevenendo riferimenti circolari nella serializzazione JSON.
  */
-@Mapper(config = HairLabMapperConfig.class)
+@Mapper(componentModel = "spring")
 public interface CustomerMapper {
 
     /**
-     * Converte una Entity Customer in CustomerDto.
+     * Converte una Entity Customer nel relativo DTO.
      *
-     * @param entity Customer da convertire
+     * @param entity Entity da convertire
      * @return DTO corrispondente
      */
     @Mapping(target = "appointmentIds", source = "appointments")
     CustomerDto toDto(Customer entity);
 
     /**
-     * Converte una lista di Customer in una lista di DTO.
+     * Converte una lista di Customer in una lista di CustomerDto.
      *
-     * @param entities lista di Entity
-     * @return lista di DTO
+     * @param entities lista delle Entity
+     * @return lista dei DTO
      */
     List<CustomerDto> toDtoList(List<Customer> entities);
 
     /**
-     * Crea una nuova Entity Customer a partire dal DTO.
+     * Converte un CustomerDto in una nuova Entity Customer.
      *
-     * id, createdAt e updatedAt vengono ignorati perché devono essere
-     * generati/gestiti dal database o dal Service.
-     * La relazione appointments non viene costruita dal mapper.
+     * L'id viene ignorato perché normalmente viene generato dal database.
+     * Anche appointments, createdAt e updatedAt vengono ignorati perché
+     * devono essere gestiti rispettivamente dal Service e dal backend.
      *
-     * @param dto dati da convertire
+     * @param dto DTO da convertire
      * @return nuova Entity Customer
      */
     @Mapping(target = "id", ignore = true)
@@ -56,26 +55,22 @@ public interface CustomerMapper {
     Customer toEntity(CustomerDto dto);
 
     /**
-     * Aggiorna una Customer esistente utilizzando i dati del DTO.
+     * Converte una lista di CustomerDto in una lista di Customer.
      *
-     * L'identità, le date tecniche e le relazioni non vengono modificate
-     * automaticamente dal mapper.
+     * Le regole definite nel metodo toEntity vengono applicate
+     * automaticamente a ogni elemento della lista.
      *
-     * @param dto dati aggiornati
-     * @param entity Entity esistente da aggiornare
+     * @param dtos lista dei DTO
+     * @return lista delle Entity
      */
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "appointments", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
-    void updateEntityFromDto(CustomerDto dto, @MappingTarget Customer entity);
+    List<Customer> toEntityList(List<CustomerDto> dtos);
 
     /**
-     * Metodo di supporto utilizzato da MapStruct per convertire
+     * Metodo di supporto usato da MapStruct per convertire
      * List<Appointment> in List<Integer>.
      *
-     * @param appointments appuntamenti del cliente
-     * @return lista degli ID degli appuntamenti
+     * @param appointments appuntamenti associati al cliente
+     * @return lista degli identificativi
      */
     default List<Integer> mapAppointmentsToIds(List<Appointment> appointments) {
         if (appointments == null) {
