@@ -1,4 +1,4 @@
-package com.generation.hairlab.database;
+package com.generation.hairlab.utility;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
