@@ -1,5 +1,8 @@
-package com.generation.hairlab.model;
+package com.generation.hairlab.enums;
 
+/**
+ * Elenca le principali famiglie di riflesso cromatico delle tinte.
+ */
 public enum Reflection {
     NATURAL,
 

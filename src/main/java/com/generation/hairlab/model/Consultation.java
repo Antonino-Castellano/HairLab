@@ -1,12 +1,9 @@
 package com.generation.hairlab.model;
 
-
-
 import java.time.LocalDateTime;
 
-import com.generation.hairlab.model.Appointment;
-import com.generation.hairlab.model.Customer;
-import com.generation.hairlab.model.Employee;
+import com.generation.hairlab.enums.ConsultationType;
+import com.generation.hairlab.enums.FeasibilityStatus;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -20,6 +17,13 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
+/**
+ * Rappresenta una consulenza tecnica effettuata su un cliente del salone.
+ *
+ * La consulenza collega il cliente e l'operatore che la esegue e può essere
+ * associata opzionalmente a un appuntamento. Contiene diagnosi, obiettivo,
+ * valutazione di fattibilità, rischi e procedura proposta.
+ */
 @Entity
 @Table(name = "consultations")
 public class Consultation {
@@ -83,10 +87,10 @@ public class Consultation {
      * Tipo di consulenza.
      *
      * Esempi:
-     * HAIRCUT
-     * COLOR
-     * TREATMENT
-     * GENERAL
+     * HAIR_CUT
+     * HAIR_COLOR
+     * HAIR_STYLING
+     * HAIR_ANALYSIS
      */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
@@ -132,7 +136,7 @@ public class Consultation {
      * Esempi:
      * FEASIBLE
      * FEASIBLE_WITH_LIMITATIONS
-     * NOT_RECOMMENDED
+     * NOT_FEASIBLE
      */
     @Enumerated(EnumType.STRING)
     @Column(length = 40)

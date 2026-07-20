@@ -7,17 +7,27 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import lombok.Data;
 
+/**
+ * Rappresenta una categoria utilizzata per organizzare i servizi del salone.
+ *
+ * Esempi possibili sono taglio, colore, styling o trattamenti.
+ */
 @Entity
 @Data
 public class ProductCategory {
+
+    /** Identificativo univoco della categoria. */
     @Id
-    @GeneratedValue (strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column (unique = true, nullable = false)
+    /** Nome univoco della categoria. */
+    @Column(unique = true, nullable = false)
     private String name;
 
+    /** Descrizione libera della categoria. */
     private String desc;
 
+    /** Indica se la categoria è attualmente utilizzabile. */
     private boolean active;
 }

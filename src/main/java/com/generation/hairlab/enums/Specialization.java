@@ -1,6 +1,9 @@
-package com.generation.hairlab.model;
+package com.generation.hairlab.enums;
 
-public enum Specializzation {
+/**
+ * Elenca le principali specializzazioni professionali assegnabili a un dipendente.
+ */
+public enum Specialization {
     // TAGLIO
     WOMENS_CUT,
     MENS_CUT,

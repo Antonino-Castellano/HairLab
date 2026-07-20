@@ -3,46 +3,82 @@ package com.generation.hairlab.model;
 import java.time.LocalDate;
 import java.util.Set;
 
+import com.generation.hairlab.enums.JobTitle;
+import com.generation.hairlab.enums.Specialization;
+
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
 import lombok.Data;
 
+/**
+ * Rappresenta un dipendente o collaboratore operativo del salone.
+ *
+ * Oltre ai dati anagrafici contiene la mansione principale e l'insieme delle
+ * specializzazioni professionali che possono essere utilizzate per descrivere
+ * le competenze dell'operatore.
+ */
 @Entity
 @Data
 public class Employee {
+
+    /** Identificativo univoco del dipendente. */
     @Id
-    @GeneratedValue (strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column (nullable = false)
+    /** Nome del dipendente. */
+    @Column(nullable = false)
     private String firstName;
 
-    @Column (nullable = false)
+    /** Cognome del dipendente. */
+    @Column(nullable = false)
     private String lastName;
 
-    @Column (nullable = false, unique = true)
+    /** Email univoca del dipendente. */
+    @Column(nullable = false, unique = true)
     private String email;
 
-    @Column (nullable = false, unique = true)
+    /** Numero di telefono univoco del dipendente. */
+    @Column(nullable = false, unique = true)
     private String telephoneNumber;
 
-    @Enumerated (EnumType.STRING)
-    @Column (nullable = false)
+    /** Mansione principale svolta dal dipendente nel salone. */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private JobTitle jobTitle;
 
-    @Enumerated (EnumType.STRING)
-    @Column (nullable = false)
-    private Set<Specializzation> specializzation;
+    /**
+     * Insieme delle specializzazioni professionali del dipendente.
+     *
+     * Specialization è un enum e non un'entità: per questo la collezione viene
+     * mappata con ElementCollection e salvata in una tabella dedicata collegata
+     * all'Employee tramite employee_id. Una semplice @Column non può contenere
+     * direttamente un Set di valori.
+     */
+    @ElementCollection
+    @CollectionTable(
+        name = "employee_specializations",
+        joinColumns = @JoinColumn(name = "employee_id")
+    )
+    @Enumerated(EnumType.STRING)
+    @Column(name = "specialization", nullable = false)
+    private Set<Specialization> specializations;
 
-    @Column (nullable = false)
+    /** Data di assunzione o inizio collaborazione. */
+    @Column(nullable = false)
     private LocalDate hireDate;
 
+    /** Indica se il dipendente è attualmente attivo. */
     private boolean active;
 
+    /** Eventuali note interne relative al dipendente. */
     private String notes;
 }

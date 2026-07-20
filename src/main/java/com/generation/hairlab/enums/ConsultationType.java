@@ -1,5 +1,8 @@
-package com.generation.hairlab.model;
+package com.generation.hairlab.enums;
 
+/**
+ * Elenca le tipologie di consulenza tecnica disponibili nel gestionale.
+ */
 public enum ConsultationType {
 
     HAIR_CUT,

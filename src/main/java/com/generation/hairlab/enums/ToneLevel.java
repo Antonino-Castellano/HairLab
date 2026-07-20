@@ -1,5 +1,8 @@
-package com.generation.hairlab.model;
+package com.generation.hairlab.enums;
 
+/**
+ * Elenca le altezze di tono utilizzate per classificare il colore dei capelli.
+ */
 public enum ToneLevel {
     LEVEL_1_BLACK,
     LEVEL_2_VERY_DARK_BROWN,
