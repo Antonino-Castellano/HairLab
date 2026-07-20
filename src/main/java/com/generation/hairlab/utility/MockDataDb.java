@@ -215,14 +215,14 @@ public class MockDataDb implements CommandLineRunner {
 
         ProductCategory haircutCategory = new ProductCategory();
         haircutCategory.setName("TAGLIO");
-        haircutCategory.setDesc("Servizi professionali di taglio.");
+        haircutCategory.setDescription("Servizi professionali di taglio.");
         haircutCategory.setActive(true);
         entityManager.persist(haircutCategory);
 
 
         ProductCategory colorCategory = new ProductCategory();
         colorCategory.setName("COLORE");
-        colorCategory.setDesc(
+        colorCategory.setDescription(
             "Servizi tecnici di colorazione e schiaritura."
         );
         colorCategory.setActive(true);
@@ -231,14 +231,14 @@ public class MockDataDb implements CommandLineRunner {
 
         ProductCategory stylingCategory = new ProductCategory();
         stylingCategory.setName("STYLING");
-        stylingCategory.setDesc("Servizi di piega e styling.");
+        stylingCategory.setDescription("Servizi di piega e styling.");
         stylingCategory.setActive(true);
         entityManager.persist(stylingCategory);
 
 
         ProductCategory treatmentCategory = new ProductCategory();
         treatmentCategory.setName("TRATTAMENTI");
-        treatmentCategory.setDesc(
+        treatmentCategory.setDescription(
             "Trattamenti professionali per capelli e cute."
         );
         treatmentCategory.setActive(true);
@@ -254,7 +254,7 @@ public class MockDataDb implements CommandLineRunner {
         SalonProduct womensCut = new SalonProduct();
         womensCut.setProductCategory(haircutCategory);
         womensCut.setName("Taglio donna");
-        womensCut.setDesc(
+        womensCut.setDescription(
             "Taglio personalizzato con consulenza iniziale."
         );
         womensCut.setDuration(45);
@@ -266,7 +266,7 @@ public class MockDataDb implements CommandLineRunner {
         SalonProduct mensCut = new SalonProduct();
         mensCut.setProductCategory(haircutCategory);
         mensCut.setName("Taglio uomo");
-        mensCut.setDesc("Taglio uomo personalizzato.");
+        mensCut.setDescription("Taglio uomo personalizzato.");
         mensCut.setDuration(30);
         mensCut.setBasePrice(25.00);
         mensCut.setActive(true);
@@ -276,7 +276,7 @@ public class MockDataDb implements CommandLineRunner {
         SalonProduct fullColor = new SalonProduct();
         fullColor.setProductCategory(colorCategory);
         fullColor.setName("Colore completo");
-        fullColor.setDesc(
+        fullColor.setDescription(
             "Colorazione completa di radici, lunghezze e punte."
         );
         fullColor.setDuration(90);
@@ -288,7 +288,7 @@ public class MockDataDb implements CommandLineRunner {
         SalonProduct balayage = new SalonProduct();
         balayage.setProductCategory(colorCategory);
         balayage.setName("Balayage");
-        balayage.setDesc(
+        balayage.setDescription(
             "Servizio di schiaritura personalizzata con tecnica balayage."
         );
         balayage.setDuration(180);
@@ -300,7 +300,7 @@ public class MockDataDb implements CommandLineRunner {
         SalonProduct blowDry = new SalonProduct();
         blowDry.setProductCategory(stylingCategory);
         blowDry.setName("Piega");
-        blowDry.setDesc("Lavaggio e piega professionale.");
+        blowDry.setDescription("Lavaggio e piega professionale.");
         blowDry.setDuration(40);
         blowDry.setBasePrice(25.00);
         blowDry.setActive(true);
@@ -310,7 +310,7 @@ public class MockDataDb implements CommandLineRunner {
         SalonProduct reconstruction = new SalonProduct();
         reconstruction.setProductCategory(treatmentCategory);
         reconstruction.setName("Trattamento ricostruttivo");
-        reconstruction.setDesc(
+        reconstruction.setDescription(
             "Trattamento professionale per capelli sensibilizzati."
         );
         reconstruction.setDuration(30);

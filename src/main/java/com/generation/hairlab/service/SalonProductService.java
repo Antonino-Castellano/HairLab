@@ -85,7 +85,7 @@ public class SalonProductService {
 
         product.setProductCategory(category);
         product.setName(dto.getName());
-        product.setDesc(dto.getDesc());
+        product.setDescription(dto.getDesc());
         product.setDuration(dto.getDuration());
         product.setBasePrice(dto.getBasePrice());
         product.setActive(dto.isActive());

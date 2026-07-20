@@ -69,7 +69,7 @@ public class ProductCategoryService {
         }
 
         category.setName(dto.getName());
-        category.setDesc(dto.getDesc());
+        category.setDescription(dto.getDesc());
         category.setActive(dto.isActive());
 
         return productCategoryMapper.toDto(productCategoryRepository.save(category));

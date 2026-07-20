@@ -41,7 +41,7 @@ public class SalonProduct {
     private String name;
 
     /** Descrizione libera del servizio/prodotto. */
-    private String desc;
+    private String description;
 
     /** Durata prevista del servizio, espressa in minuti. */
     @Column(nullable = false)

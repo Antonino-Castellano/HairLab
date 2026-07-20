@@ -26,7 +26,7 @@ public class ProductCategory {
     private String name;
 
     /** Descrizione libera della categoria. */
-    private String desc;
+    private String description;
 
     /** Indica se la categoria è attualmente utilizzabile. */
     private boolean active;
