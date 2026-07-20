@@ -31,7 +31,7 @@ public class ConsultationController {
 
     /** Service dedicato alle consulenze. */
    
-    private ConsultationService consultationService;
+    private final ConsultationService consultationService;
 
     /** Restituisce tutte le consulenze. */
     @GetMapping

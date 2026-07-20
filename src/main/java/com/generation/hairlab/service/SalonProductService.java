@@ -24,13 +24,13 @@ import lombok.RequiredArgsConstructor;
 public class SalonProductService {
 
     /** Repository dei servizi del salone. */
-    private SalonProductRepository salonProductRepository;
+    private final SalonProductRepository salonProductRepository;
 
     /** Repository necessario per risolvere productCategoryId. */
-    private ProductCategoryRepository productCategoryRepository;
+    private final ProductCategoryRepository productCategoryRepository;
 
     /** Mapper SalonProduct <-> SalonProductDto. */
-    private SalonProductMapper salonProductMapper;
+    private final SalonProductMapper salonProductMapper;
 
     /** Restituisce tutti i servizi/prodotti. */
     public List<SalonProductDto> findAll() {

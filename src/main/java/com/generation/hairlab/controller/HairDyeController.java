@@ -29,7 +29,7 @@ public class HairDyeController {
 
     /** Service dedicato agli HairDye. */
    
-    private HairDyeService hairDyeService;
+    private final HairDyeService hairDyeService;
 
     /** Restituisce tutti i prodotti tecnici colore. */
     @GetMapping

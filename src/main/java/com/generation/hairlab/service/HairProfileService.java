@@ -23,13 +23,13 @@ import lombok.RequiredArgsConstructor;
 public class HairProfileService {
 
     /** Repository delle HairProfile. */
-    private HairProfileRepository hairProfileRepository;
+    private final HairProfileRepository hairProfileRepository;
 
     /** Repository necessario per risolvere customerId. */
-    private CustomerRepository customerRepository;
+    private final CustomerRepository customerRepository;
 
     /** Mapper HairProfile <-> HairProfileDto. */
-    private HairProfileMapper hairProfileMapper;
+    private final HairProfileMapper hairProfileMapper;
 
     /** Restituisce tutte le schede capelli. */
     public List<HairProfileDto> findAll() {

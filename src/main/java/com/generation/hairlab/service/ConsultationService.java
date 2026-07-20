@@ -28,17 +28,15 @@ import lombok.RequiredArgsConstructor;
 public class ConsultationService {
 
    
-    private ConsultationRepository consultationRepository;
+    private final ConsultationRepository consultationRepository;
 
-    private CustomerRepository customerRepository;
+    private final CustomerRepository customerRepository;
 
+    private final EmployeeRepository employeeRepository;
 
-    private EmployeeRepository employeeRepository;
+    private final AppointmentRepository appointmentRepository;
 
-    private AppointmentRepository appointmentRepository;
-
-
-    private ConsultationMapper consultationMapper;
+    private final ConsultationMapper consultationMapper;
 
     /** Restituisce tutte le consulenze. */
     public List<ConsultationDto> findAll() {

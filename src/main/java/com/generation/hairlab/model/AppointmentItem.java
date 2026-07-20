@@ -42,7 +42,6 @@ public class AppointmentItem {
     private String resultNotes;
 
     /** Data e ora in cui il servizio risulta completato. */
-    @Column(nullable = false)
     private LocalDateTime completedAt;
 
     /**

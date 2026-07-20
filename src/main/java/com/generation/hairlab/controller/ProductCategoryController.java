@@ -29,7 +29,7 @@ import lombok.RequiredArgsConstructor;
 public class ProductCategoryController {
 
     /** Service dedicato alle categorie. */
-    private ProductCategoryService productCategoryService;
+    private final ProductCategoryService productCategoryService;
 
     /** Restituisce tutte le categorie. */
     @GetMapping

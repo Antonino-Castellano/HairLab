@@ -35,7 +35,7 @@ import lombok.RequiredArgsConstructor;
 public class CustomerController {
 
     /** Service contenente la logica applicativa relativa ai clienti. */
-    private CustomerService customerService;
+    private final CustomerService customerService;
 
     /**
      * Restituisce tutti i clienti presenti nel database.

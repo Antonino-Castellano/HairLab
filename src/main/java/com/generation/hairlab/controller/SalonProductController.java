@@ -31,7 +31,7 @@ import lombok.RequiredArgsConstructor;
 public class SalonProductController {
 
     /** Service dedicato ai SalonProduct. */
-    private SalonProductService salonProductService;
+    private final SalonProductService salonProductService;
 
     /** Restituisce tutti i servizi/prodotti. */
     @GetMapping

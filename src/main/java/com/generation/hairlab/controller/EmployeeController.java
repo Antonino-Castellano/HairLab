@@ -31,7 +31,7 @@ import lombok.RequiredArgsConstructor;
 public class EmployeeController {
 
     /** Service dedicato alla gestione dei dipendenti. */
-    private EmployeeService employeeService;
+    private final EmployeeService employeeService;
 
     /** Restituisce tutti i dipendenti. */
     @GetMapping

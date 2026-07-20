@@ -20,10 +20,10 @@ import lombok.RequiredArgsConstructor;
 public class EmployeeService {
 
     /** Repository per l'accesso ai dati Employee. */
-    private EmployeeRepository employeeRepository;
+    private final EmployeeRepository employeeRepository;
 
     /** Mapper Employee <-> EmployeeDto. */
-    private EmployeeMapper employeeMapper;
+    private final EmployeeMapper employeeMapper;
 
     /** Restituisce tutti i dipendenti. */
     public List<EmployeeDto> findAll() {

@@ -32,7 +32,7 @@ public class AppointmentItemController {
 
     /** Service dedicato agli AppointmentItem. */
     
-    private AppointmentItemService appointmentItemService;
+    private final AppointmentItemService appointmentItemService;
 
     /** Restituisce tutti gli AppointmentItem. */
     @GetMapping

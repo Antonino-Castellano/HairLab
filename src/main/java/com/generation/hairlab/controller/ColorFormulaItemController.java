@@ -31,7 +31,7 @@ import lombok.RequiredArgsConstructor;
 public class ColorFormulaItemController {
 
     /** Service dedicato agli elementi delle formule. */
-    private ColorFormulaItemService colorFormulaItemService;
+    private final ColorFormulaItemService colorFormulaItemService;
 
     /** Restituisce tutti gli elementi delle formule. */
     @GetMapping

@@ -24,10 +24,10 @@ import lombok.RequiredArgsConstructor;
 public class CustomerService {
 
     /** Repository utilizzato per la persistenza dei clienti. */
-    private CustomerRepository customerRepository;
+    private final CustomerRepository customerRepository;
 
     /** Mapper utilizzato per convertire Customer e CustomerDto. */
-    private CustomerMapper customerMapper;
+    private final CustomerMapper customerMapper;
 
     /** Restituisce tutti i clienti presenti nel database. */
     public List<CustomerDto> findAll() {

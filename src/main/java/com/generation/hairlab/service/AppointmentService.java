@@ -25,13 +25,13 @@ import lombok.RequiredArgsConstructor;
 public class AppointmentService {
 
     /** Repository degli appuntamenti. */
-    private AppointmentRepository appointmentRepository;
+    private final AppointmentRepository appointmentRepository;
 
     /** Repository necessario per risolvere customerId. */
-    private CustomerRepository customerRepository;
+    private final CustomerRepository customerRepository;
 
     /** Mapper Appointment <-> AppointmentDto. */
-    private AppointmentMapper appointmentMapper;
+    private final AppointmentMapper appointmentMapper;
 
     /** Restituisce tutti gli appuntamenti. */
     public List<AppointmentDto> findAll() {

@@ -35,7 +35,7 @@ import lombok.RequiredArgsConstructor;
 public class AppointmentController {
 
     /** Service dedicato agli appuntamenti. */
-    private AppointmentService appointmentService;
+    private final AppointmentService appointmentService;
 
     /** Restituisce tutti gli appuntamenti. */
     @GetMapping

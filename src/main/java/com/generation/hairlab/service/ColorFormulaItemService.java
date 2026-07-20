@@ -29,9 +29,9 @@ import lombok.RequiredArgsConstructor;
 public class ColorFormulaItemService {
 
     
-    private ColorFormulaItemRepository colorFormulaItemRepository;
+    private final ColorFormulaItemRepository colorFormulaItemRepository;
 
-    private ColorFormulaRepository colorFormulaRepository;
+    private final ColorFormulaRepository colorFormulaRepository;
 
     private HairDyeRepository hairDyeRepository;
 

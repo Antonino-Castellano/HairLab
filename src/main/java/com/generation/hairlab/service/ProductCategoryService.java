@@ -20,10 +20,10 @@ import lombok.RequiredArgsConstructor;
 public class ProductCategoryService {
 
     /** Repository delle categorie. */
-    private ProductCategoryRepository productCategoryRepository;
+    private final ProductCategoryRepository productCategoryRepository;
 
     /** Mapper ProductCategory <-> ProductCategoryDto. */
-    private ProductCategoryMapper productCategoryMapper;
+    private final ProductCategoryMapper productCategoryMapper;
 
     /** Restituisce tutte le categorie. */
     public List<ProductCategoryDto> findAll() {

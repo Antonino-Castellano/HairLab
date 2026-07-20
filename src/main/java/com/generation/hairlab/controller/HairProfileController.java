@@ -31,7 +31,7 @@ import lombok.RequiredArgsConstructor;
 public class HairProfileController {
 
     /** Service dedicato alla gestione delle HairProfile. */
-    private HairProfileService hairProfileService;
+    private final HairProfileService hairProfileService;
 
     /** Restituisce tutte le schede tecniche. */
     @GetMapping

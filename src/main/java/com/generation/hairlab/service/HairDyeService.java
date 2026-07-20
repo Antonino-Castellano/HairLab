@@ -20,10 +20,10 @@ import lombok.RequiredArgsConstructor;
 public class HairDyeService {
 
     /** Repository delle tinte/prodotti tecnici. */
-    private HairDyeRepository hairDyeRepository;
+    private final HairDyeRepository hairDyeRepository;
 
     /** Mapper HairDye <-> HairDyeDto. */
-    private HairDyeMapper hairDyeMapper;
+    private final HairDyeMapper hairDyeMapper;
 
     /** Restituisce tutti i prodotti tecnici. */
     public List<HairDyeDto> findAll() {

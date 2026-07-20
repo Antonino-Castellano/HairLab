@@ -26,13 +26,13 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ColorFormulaService {
 
-    private ColorFormulaRepository colorFormulaRepository;
+    private final ColorFormulaRepository colorFormulaRepository;
 
-    private ConsultationRepository consultationRepository;
+    private final ConsultationRepository consultationRepository;
 
-    private AppointmentItemRepository appointmentItemRepository;
+    private final AppointmentItemRepository appointmentItemRepository;
 
-    private ColorFormulaMapper colorFormulaMapper;
+    private final ColorFormulaMapper colorFormulaMapper;
 
     /** Restituisce tutte le formule colore. */
     public List<ColorFormulaDto> findAll() {

@@ -31,13 +31,13 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AppointmentItemService {
     
-    private AppointmentItemRepository appointmentItemRepository;
+    private final AppointmentItemRepository appointmentItemRepository;
     
-    private AppointmentRepository appointmentRepository;
+    private final AppointmentRepository appointmentRepository;
     
-    private SalonProductRepository salonProductRepository;
+    private final SalonProductRepository salonProductRepository;
 
-    private EmployeeRepository employeeRepository;
+    private final EmployeeRepository employeeRepository;
 
     private AppointmentItemMapper appointmentItemMapper;
 
