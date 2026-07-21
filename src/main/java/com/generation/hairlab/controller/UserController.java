@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 
 @RestController
-@RequestMapping("/jd/api/users")
+@RequestMapping("/hairlab/api/users")
 @RequiredArgsConstructor
 public class UserController {
 

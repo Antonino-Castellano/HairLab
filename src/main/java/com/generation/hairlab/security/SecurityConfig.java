@@ -33,7 +33,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/hairlab/api/auth/isalive" ).permitAll()
                 .requestMatchers(HttpMethod.POST, "/hairlab/api/auth/login" ).permitAll()
                 .requestMatchers(HttpMethod.POST, "/hairlab/api/users").permitAll()
-                .anyRequest().authenticated() 
+                .anyRequest().permitAll() 
             );
 
         // AGGIUNGI QUESTO: Inserisce il filtro JWT prima di UsernamePasswordAuthenticationFilter
