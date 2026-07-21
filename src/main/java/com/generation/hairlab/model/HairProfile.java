@@ -148,4 +148,6 @@ public class HairProfile {
 
     /** Note tecniche libere sulla scheda capelli. */
     private String notes;
+
+   
 }
