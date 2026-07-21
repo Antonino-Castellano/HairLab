@@ -4,10 +4,8 @@ import java.util.List;
 
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import org.mapstruct.Named;
 
 import com.generation.hairlab.dto.CustomerDto;
-import com.generation.hairlab.model.Appointment;
 import com.generation.hairlab.model.Customer;
 
 /**
@@ -21,20 +19,12 @@ import com.generation.hairlab.model.Customer;
 @Mapper(componentModel = "spring")
 public interface CustomerMapper {
 
-    
-    @Named("appointmentsToId")
-    default Integer appointmentsToId(Appointment appointment) {
-        return appointment != null ? appointment.getId() : null;
-    }
-
-
     /**
      * Converte una Entity Customer nel relativo DTO.
      *
      * @param entity Entity da convertire
      * @return DTO corrispondente
      */
-    @Mapping(target = "appointmentIds", source = "appointments", qualifiedByName = "appointmentsToId")
     CustomerDto toDto(Customer entity);
 
     /**

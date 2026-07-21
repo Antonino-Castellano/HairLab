@@ -25,7 +25,7 @@ public class SalonProductDto {
     private String name;
 
     /** Descrizione del servizio o prodotto. */
-    private String description;
+    private String desc;
 
     /** Durata prevista del servizio espressa in minuti. */
     private int duration;
