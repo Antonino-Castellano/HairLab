@@ -21,6 +21,7 @@ public interface SalonProductMapper {
 
     /** Converte SalonProduct in SalonProductDto. */
     @Mapping(target = "productCategoryId", source = "productCategory.id")
+    @Mapping(target = "description", source = "description")
     SalonProductDto toDto(SalonProduct entity);
 
     /** Converte una lista di SalonProduct in DTO. */
@@ -34,6 +35,7 @@ public interface SalonProductMapper {
      */
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "productCategory", ignore = true)
+    @Mapping(target = "description", source = "description")
     SalonProduct toEntity(SalonProductDto dto);
 
     /** Converte una lista di SalonProductDto in Entity. */
