@@ -87,7 +87,7 @@ public class HairProfile {
     /** Livello di salute dei capelli. */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private HairCondition condition;
+    private HairCondition hairCondition;
 
     /**
      * Condizioni della cute rilevate sul cliente.
