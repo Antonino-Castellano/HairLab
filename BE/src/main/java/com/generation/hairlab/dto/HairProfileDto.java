@@ -54,7 +54,7 @@ public class HairProfileDto {
     private PhysicalValue density;
 
     /** Livello di salute dei capelli. */
-    private HairCondition condition;
+    private HairCondition hairCondition;
 
     /** Condizioni della cute rilevate o dichiarate. */
     private Set<String> scalpCondition;
