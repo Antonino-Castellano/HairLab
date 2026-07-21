@@ -19,7 +19,7 @@ public class ProductCategoryDto {
     private String name;
 
     /** Descrizione della categoria. */
-    private String desc;
+    private String description;
 
     /** Indica se la categoria è attualmente utilizzabile. */
     private boolean active;

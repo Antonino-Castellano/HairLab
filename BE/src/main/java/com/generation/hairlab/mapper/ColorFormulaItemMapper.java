@@ -4,9 +4,11 @@ import java.util.List;
 
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.Named;
 
 import com.generation.hairlab.dto.ColorFormulaItemDto;
 import com.generation.hairlab.model.ColorFormulaItem;
+import com.generation.hairlab.model.HairDye;
 
 /**
  * Mapper MapStruct utilizzato per convertire ColorFormulaItem
@@ -21,8 +23,14 @@ import com.generation.hairlab.model.ColorFormulaItem;
 @Mapper(componentModel = "spring")
 public interface ColorFormulaItemMapper {
 
+    @Named("hairDyeToId")
+    default Integer hairDyeToId(HairDye hairDye) {
+        return hairDye != null ? hairDye.getId() : null;
+    }
+
     /** Converte ColorFormulaItem in ColorFormulaItemDto. */
     @Mapping(target = "colorFormulaId", source = "colorFormula.id")
+    @Mapping(target = "hairDyeIds", source = "hairDyes", qualifiedByName = "hairDyeToId")
     ColorFormulaItemDto toDto(ColorFormulaItem entity);
 
     /** Converte una lista di ColorFormulaItem in DTO. */
