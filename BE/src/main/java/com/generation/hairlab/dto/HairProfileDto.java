@@ -2,6 +2,7 @@ package com.generation.hairlab.dto;
 
 import java.util.Set;
 
+import com.generation.hairlab.enums.HairCondition;
 import com.generation.hairlab.enums.HairTexture;
 import com.generation.hairlab.enums.HairType;
 import com.generation.hairlab.enums.PhysicalValue;
@@ -51,6 +52,9 @@ public class HairProfileDto {
 
     /** Livello di densità dei capelli. */
     private PhysicalValue density;
+
+    /** Livello di salute dei capelli. */
+    private HairCondition condition;
 
     /** Condizioni della cute rilevate o dichiarate. */
     private Set<String> scalpCondition;

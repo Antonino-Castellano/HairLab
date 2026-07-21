@@ -14,6 +14,7 @@ import com.generation.hairlab.enums.ColorFormulaStatus;
 import com.generation.hairlab.enums.ConsultationType;
 import com.generation.hairlab.enums.FeasibilityStatus;
 import com.generation.hairlab.enums.HairTexture;
+import com.generation.hairlab.enums.HairCondition;
 import com.generation.hairlab.enums.HairType;
 import com.generation.hairlab.enums.JobTitle;
 import com.generation.hairlab.enums.MixingRatio;
@@ -374,6 +375,7 @@ public class MockDataDb implements CommandLineRunner {
         mariaProfile.setReflection(Reflection.GOLD);
         mariaProfile.setHairType(HairType.WAVY);
         mariaProfile.setTexture(HairTexture.FINE);
+        mariaProfile.setHairCondition(HairCondition.DAMAGED);
         mariaProfile.setPorosity(PhysicalValue.HIGH);
         mariaProfile.setDensity(PhysicalValue.MEDIUM);
         mariaProfile.setScalpCondition(
@@ -406,6 +408,7 @@ public class MockDataDb implements CommandLineRunner {
         giuliaProfile.setReflection(Reflection.NATURAL);
         giuliaProfile.setHairType(HairType.STRAIGHT);
         giuliaProfile.setTexture(HairTexture.MEDIUM);
+        giuliaProfile.setHairCondition(HairCondition.HEALTHY);
         giuliaProfile.setPorosity(PhysicalValue.LOW);
         giuliaProfile.setDensity(PhysicalValue.HIGH);
         giuliaProfile.setScalpCondition(

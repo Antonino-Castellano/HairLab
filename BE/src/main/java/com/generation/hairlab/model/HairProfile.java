@@ -2,6 +2,7 @@ package com.generation.hairlab.model;
 
 import java.util.Set;
 
+import com.generation.hairlab.enums.HairCondition;
 import com.generation.hairlab.enums.HairTexture;
 import com.generation.hairlab.enums.HairType;
 import com.generation.hairlab.enums.PhysicalValue;
@@ -82,6 +83,11 @@ public class HairProfile {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private PhysicalValue density;
+
+    /** Livello di salute dei capelli. */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private HairCondition condition;
 
     /**
      * Condizioni della cute rilevate sul cliente.
