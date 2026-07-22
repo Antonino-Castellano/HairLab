@@ -181,6 +181,7 @@ public class MockDataDb implements CommandLineRunner {
         maria.setActive(true);
         maria.setCreatedAt(LocalDateTime.now().minusMonths(8));
         maria.setUpdatedAt(LocalDateTime.now().minusDays(10));
+        maria.setProfileImage("/assets/images/customers/avatar-maria-esposito.jpg");
         entityManager.persist(maria);
 
 
@@ -193,6 +194,7 @@ public class MockDataDb implements CommandLineRunner {
         giulia.setActive(true);
         giulia.setCreatedAt(LocalDateTime.now().minusMonths(5));
         giulia.setUpdatedAt(LocalDateTime.now().minusDays(5));
+        giulia.setProfileImage("/assets/images/customers/avatar-giulia-romano.jpg");
         entityManager.persist(giulia);
 
 
@@ -205,6 +207,7 @@ public class MockDataDb implements CommandLineRunner {
         sara.setActive(true);
         sara.setCreatedAt(LocalDateTime.now().minusMonths(2));
         sara.setUpdatedAt(LocalDateTime.now().minusDays(2));
+        sara.setProfileImage("/assets/images/customers/avatar-sara-ferrari.jpg");
         entityManager.persist(sara);
 
 
