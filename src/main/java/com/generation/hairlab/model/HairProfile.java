@@ -20,136 +20,191 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
+
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
 /**
- * Rappresenta la scheda tecnica corrente dei capelli di un cliente.
+ * Rappresenta la scheda tecnica corrente
+ * dei capelli di una cliente.
  *
- * Contiene caratteristiche utili alla diagnosi professionale, come tono,
- * riflesso, tipologia, texture, porosità e densità, oltre a informazioni
- * descrittive sulla cute, sulla storia chimica e sulle controindicazioni.
+ * Ogni HairProfile appartiene a un solo Customer
+ * e ogni Customer può possedere una sola HairProfile.
  */
 @Entity
 @Data
 public class HairProfile {
 
-    /** Identificativo univoco della scheda capelli. */
+    /**
+     * Identificativo univoco della scheda.
+     */
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(
+        strategy = GenerationType.IDENTITY
+    )
     private Integer id;
 
     /**
      * Cliente proprietario della scheda capelli.
      *
-     * La relazione è OneToOne perché la struttura del progetto prevede una sola
-     * HairProfile corrente per ciascun Customer e ogni HairProfile appartiene a
-     * un solo cliente.
+     * nullable = false:
+     * una HairProfile deve sempre appartenere a un cliente.
+     *
+     * unique = true:
+     * impedisce anche a livello database
+     * la creazione di due HairProfile
+     * per lo stesso Customer.
+     *
+     * Le esclusioni Lombok evitano ricorsioni
+     * durante toString(), equals() e hashCode().
      */
     @OneToOne
-    @JoinColumn(name = "customer_id")
+    @JoinColumn(
+        name = "customer_id",
+        nullable = false,
+        unique = true
+    )
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private Customer customer;
 
-    /** Altezza di tono naturale dei capelli. */
+    /**
+     * Altezza di tono naturale.
+     */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ToneLevel naturalTone;
 
-    /** Altezza di tono attuale dei capelli. */
+    /**
+     * Altezza di tono attuale.
+     */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ToneLevel currentTone;
 
-    /** Riflesso cromatico attualmente rilevato sui capelli. */
+    /**
+     * Riflesso cromatico attuale.
+     */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Reflection reflection;
 
-    /** Tipologia naturale del capello: liscio, mosso, riccio o coily. */
+    /**
+     * Tipologia naturale:
+     *
+     * STRAIGHT
+     * WAVY
+     * CURLY
+     * COILY
+     */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private HairType hairType;
 
-    /** Spessore/texture della fibra capillare. */
+    /**
+     * Texture/spessore della fibra.
+     */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private HairTexture texture;
 
-    /** Livello di porosità del capello. */
+    /**
+     * Porosità.
+     */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private PhysicalValue porosity;
 
-    /** Livello di densità dei capelli. */
+    /**
+     * Densità.
+     */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private PhysicalValue density;
 
     /**
-     * Condizione generale e stato di salute del capello.
+     * Condizione generale del capello.
+     *
+     * Il frontend considera questo campo obbligatorio,
+     * quindi rendiamo coerente anche il database.
      */
     @Enumerated(EnumType.STRING)
-    @Column(name = "hair_condition")
+    @Column(
+        name = "hair_condition",
+        nullable = false
+    )
     private HairCondition hairCondition;
 
     /**
-     * Condizioni della cute rilevate sul cliente.
+     * Condizioni della cute.
      *
-     * Essendo un Set<String>, non può essere salvato in una singola colonna.
-     * ElementCollection crea una tabella dedicata collegata alla HairProfile.
+     * Trattandosi di più String,
+     * JPA utilizza una tabella dedicata.
      */
     @ElementCollection
     @CollectionTable(
         name = "hair_profile_scalp_conditions",
-        joinColumns = @JoinColumn(name = "hair_profile_id")
+        joinColumns = @JoinColumn(
+            name = "hair_profile_id"
+        )
     )
-    @Column(name = "scalp_condition", nullable = false)
+    @Column(
+        name = "scalp_condition",
+        nullable = false
+    )
     private Set<String> scalpCondition;
 
     /**
-     * Storico dei principali trattamenti chimici dichiarati o rilevati.
-     *
-     * La collezione viene salvata in una tabella dedicata tramite
-     * ElementCollection perché contiene più valori String.
+     * Storico dei trattamenti chimici.
      */
     @ElementCollection
     @CollectionTable(
         name = "hair_profile_chemical_history",
-        joinColumns = @JoinColumn(name = "hair_profile_id")
+        joinColumns = @JoinColumn(
+            name = "hair_profile_id"
+        )
     )
-    @Column(name = "chemical_history", nullable = false)
+    @Column(
+        name = "chemical_history",
+        nullable = false
+    )
     private Set<String> chemicalHistory;
 
     /**
-     * Sensibilità dichiarate o rilevate.
-     *
-     * La relazione è modellata come ElementCollection perché si tratta di una
-     * collezione di valori semplici e non di entità autonome.
+     * Sensibilità rilevate o dichiarate.
      */
     @ElementCollection
     @CollectionTable(
         name = "hair_profile_sensitivities",
-        joinColumns = @JoinColumn(name = "hair_profile_id")
+        joinColumns = @JoinColumn(
+            name = "hair_profile_id"
+        )
     )
-    @Column(name = "sensitivity", nullable = false)
+    @Column(
+        name = "sensitivity",
+        nullable = false
+    )
     private Set<String> sensitivities;
 
     /**
-     * Controindicazioni tecniche associate al profilo.
-     *
-     * Anche questa collezione viene salvata in una tabella separata perché un
-     * singolo campo SQL non può contenere direttamente un Set<String> tramite
-     * una normale annotazione @Column.
+     * Controindicazioni tecniche.
      */
     @ElementCollection
     @CollectionTable(
         name = "hair_profile_contraindications",
-        joinColumns = @JoinColumn(name = "hair_profile_id")
+        joinColumns = @JoinColumn(
+            name = "hair_profile_id"
+        )
     )
-    @Column(name = "contraindication", nullable = false)
+    @Column(
+        name = "contraindication",
+        nullable = false
+    )
     private Set<String> contraindications;
 
-    /** Note tecniche libere sulla scheda capelli. */
+    /**
+     * Note tecniche libere.
+     */
     private String notes;
-
-   
 }

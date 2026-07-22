@@ -1,11 +1,13 @@
 package com.generation.hairlab.service;
 
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import com.generation.hairlab.dto.LoginRequestDto;
 import com.generation.hairlab.dto.LoginResponseDto;
 import com.generation.hairlab.dto.UserDto;
+import com.generation.hairlab.enums.Role;
 import com.generation.hairlab.mapper.UserMapper;
 import com.generation.hairlab.model.User;
 import com.generation.hairlab.repository.UserRepository;
@@ -15,177 +17,210 @@ import com.generation.hairlab.utility.PasswordService;
 import lombok.RequiredArgsConstructor;
 
 /**
- * Service dedicato alla gestione degli utenti.
+ * Service dedicato alla gestione degli utenti HairLab.
  *
  * Gestisce:
- * - ricerca dell'utente tramite email;
- * - registrazione di nuovi utenti;
+ *
+ * - ricerca tramite email;
+ * - registrazione;
  * - hashing delle password;
  * - cambio password;
- * - autenticazione;
- * - generazione del token JWT.
+ * - login;
+ * - generazione JWT;
+ * - controllo sicuro del ruolo
+ *   durante la registrazione.
  */
 @Service
 @RequiredArgsConstructor
 public class UserService {
 
     /**
-     * Repository utilizzato per accedere ai dati degli utenti.
+     * Repository dedicato agli utenti.
      */
     private final UserRepository userRepo;
 
     /**
-     * Service utilizzato per codificare e verificare le password.
+     * Service utilizzato per:
+     *
+     * - codificare le password;
+     * - confrontare password in chiaro e hash.
      */
     private final PasswordService passwordService;
 
     /**
-     * Service utilizzato per generare i token JWT.
+     * Service dedicato alla generazione
+     * e gestione dei JWT.
      */
     private final JwtService jwtService;
 
     /**
-     * Mapper utilizzato per convertire User <-> UserDto.
+     * Mapper User <-> UserDto.
      */
     private final UserMapper userMapper;
-
 
     /**
      * Cerca un utente tramite email.
      *
      * @param email email dell'utente
-     * @return utente trovato oppure null se non esiste
+     * @return utente trovato oppure null
      */
-    public User findByEmail(String email) {
+    public User findByEmail(
+        String email
+    ) {
 
-        return userRepo.findByEmail(email);
+        return userRepo.findByEmail(
+            email
+        );
     }
 
-
     /**
-     * Modifica la password dell'utente attualmente autenticato.
+     * Modifica la password
+     * dell'utente autenticato.
      *
-     * Recupera l'email dell'utente dal SecurityContext,
-     * verifica che la nuova password non corrisponda a quella
-     * già salvata e successivamente salva la nuova password
-     * dopo averla codificata.
+     * L'identità dell'utente viene recuperata
+     * dal SecurityContext popolato dal JWT.
      *
-     * @param password nuova password in chiaro
-     * @throws ServiceException se l'utente non viene trovato
-     *                          oppure se la nuova password
-     *                          coincide con quella precedente
+     * @param password nuova password
+     * @throws ServiceException in caso di errore
      */
-    public void changePassword(String password) throws ServiceException {
+    public void changePassword(
+        String password
+    )
+    throws ServiceException {
 
         /*
-         * Recupera l'email dell'utente autenticato.
-         *
-         * Nel JWT abbiamo utilizzato l'email come subject,
-         * quindi getName() restituisce l'email.
+         * Recuperiamo l'autenticazione
+         * corrente da Spring Security.
          */
-        String email = SecurityContextHolder
+        Authentication authentication =
+            SecurityContextHolder
                 .getContext()
-                .getAuthentication()
-                .getName();
-
-        User user = userRepo.findByEmail(email);
+                .getAuthentication();
 
         /*
-         * Verifica che l'utente esista.
-         */
-        if (user == null) {
-             throw new ServiceException(
-                    "User with email "
-                    + email
-                    + " not found"
-            );
-        }
-
-        /*
-         * Verifica se la nuova password corrisponde
-         * già alla password salvata.
+         * Controllo difensivo.
          *
-         * NON bisogna fare:
-         *
-         * encode(password).equals(user.getPassword())
-         *
-         * perché algoritmi come BCrypt generano hash differenti
-         * anche partendo dalla stessa password.
-         *
-         * Per confrontare password in chiaro e hash
-         * bisogna utilizzare matches().
+         * In condizioni normali questo metodo
+         * dovrebbe essere richiamato solamente
+         * da endpoint protetti.
          */
         if (
-            passwordService.matches(password, user.getPassword())
+            authentication == null ||
+            authentication.getName() == null
         ) {
 
             throw new ServiceException(
-                    "La nuova password deve essere diversa "
-                    + "da quella attuale"
+                "Utente non autenticato"
             );
         }
 
         /*
-         * Codifica la nuova password.
+         * Nel JWT abbiamo utilizzato
+         * l'email come subject.
+         */
+        String email =
+            authentication.getName();
+
+        User user =
+            userRepo.findByEmail(
+                email
+            );
+
+        if (user == null) {
+
+            throw new ServiceException(
+                "User with email "
+                + email
+                + " not found"
+            );
+        }
+
+        /*
+         * Evitiamo che l'utente imposti
+         * nuovamente la stessa password.
+         */
+        if (
+            passwordService.matches(
+                password,
+                user.getPassword()
+            )
+        ) {
+
+            throw new ServiceException(
+                "La nuova password deve essere diversa "
+                + "da quella attuale"
+            );
+        }
+
+        /*
+         * Codifica della nuova password.
          */
         String hashedPassword =
-                passwordService.encode(password);
+            passwordService.encode(
+                password
+            );
+
+        user.setPassword(
+            hashedPassword
+        );
 
         /*
-         * Salva solamente l'hash nel database.
+         * Salvataggio dell'utente aggiornato.
          */
-        user.setPassword(hashedPassword);
-
-        userRepo.save(user);
+        userRepo.save(
+            user
+        );
     }
 
-
     /**
-     * Effettua il login dell'utente.
+     * Effettua il login HairLab.
      *
-     * Cerca l'utente tramite email e confronta
-     * la password ricevuta in chiaro con l'hash
-     * memorizzato nel database.
+     * Verifica:
      *
-     * Se le credenziali sono corrette viene generato
-     * un token JWT.
+     * - email;
+     * - password.
      *
-     * @param dto dati necessari per il login
-     * @return LoginResponseDto contenente il token JWT
-     * @throws ServiceException se le credenziali non sono valide
+     * Se le credenziali sono corrette,
+     * genera un JWT.
+     *
+     * @param dto credenziali di login
+     * @return DTO contenente il JWT
+     * @throws ServiceException se le credenziali sono errate
      */
-    public LoginResponseDto login(LoginRequestDto dto)
-            throws ServiceException {
+    public LoginResponseDto login(
+        LoginRequestDto dto
+    )
+    throws ServiceException {
 
         /*
-         * Cerca l'utente tramite email.
+         * Cerchiamo l'utente tramite email.
          */
         User user =
-                userRepo.findByEmail(
-                        dto.getEmail()
-                );
+            userRepo.findByEmail(
+                dto.getEmail()
+            );
 
         /*
-         * Email non trovata.
+         * Utilizziamo un messaggio generico.
          *
-         * Manteniamo un messaggio generico per non rivelare
+         * In questo modo non riveliamo
          * se l'email esiste oppure no.
          */
         if (user == null) {
 
             throw new ServiceException(
-                    "Invalid credentials"
+                "Invalid credentials"
             );
         }
 
         /*
-         * Confronta:
+         * Confrontiamo:
          *
-         * password ricevuta in chiaro
+         * password ricevuta
          *
          * con
          *
-         * password hashata presente nel database.
+         * password hashata nel database.
          */
         if (
             !passwordService.matches(
@@ -195,94 +230,269 @@ public class UserService {
         ) {
 
             throw new ServiceException(
-                    "Invalid credentials"
+                "Invalid credentials"
             );
         }
 
         /*
-         * Genera il token JWT.
+         * Generazione del JWT.
          */
         String token =
-                jwtService.generateToken(user);
+            jwtService.generateToken(
+                user
+            );
 
         /*
-         * Prepara la risposta da restituire al client.
+         * Preparazione della risposta.
          */
         LoginResponseDto response =
-                new LoginResponseDto();
+            new LoginResponseDto();
 
-        response.setToken(token);
+        response.setToken(
+            token
+        );
 
         return response;
     }
 
-
     /**
-     * Inserisce un nuovo utente nel database.
+     * Inserisce un nuovo utente.
      *
-     * La password ricevuta dal DTO viene obbligatoriamente
-     * codificata prima del salvataggio.
+     * Regola di sicurezza:
      *
-     * In questo modo nel database non viene mai salvata
-     * la password in chiaro.
+     * UTENTE NON AUTENTICATO
+     * ->
+     * può creare solamente un USER.
+     *
+     * ADMIN AUTENTICATO
+     * ->
+     * può scegliere il ruolo del nuovo utente.
+     *
+     * Questo impedisce a un client anonimo
+     * di inviare:
+     *
+     * role = ADMIN
+     *
+     * e autoassegnarsi privilegi amministrativi.
      *
      * @param dto dati del nuovo utente
-     * @return DTO dell'utente salvato
-     * @throws ServiceException in caso di errore
+     * @return utente creato
+     * @throws ServiceException in caso di dati non validi
      */
-    public UserDto insert(UserDto dto)
-            throws ServiceException {
+    public UserDto insert(
+        UserDto dto
+    )
+    throws ServiceException {
 
+        /*
+         * ========================================================
+         * VALIDAZIONE EMAIL
+         * ========================================================
+         */
+
+        if (
+            dto.getEmail() == null ||
+            dto.getEmail().isBlank()
+        ) {
+
+            throw new ServiceException(
+                "Email obbligatoria"
+            );
+        }
+
+        /*
+         * ========================================================
+         * VALIDAZIONE PASSWORD
+         * ========================================================
+         */
+
+        if (
+            dto.getPassword() == null ||
+            dto.getPassword().isBlank()
+        ) {
+
+            throw new ServiceException(
+                "Password obbligatoria"
+            );
+        }
+
+        /*
+         * ========================================================
+         * CONTROLLO EMAIL DUPLICATA
+         * ========================================================
+         */
+
+        if (
+            userRepo.findByEmail(
+                dto.getEmail()
+            ) != null
+        ) {
+
+            throw new ServiceException(
+                "Esiste già un utente "
+                + "con questa email"
+            );
+        }
+
+        /*
+         * Da questo punto in poi
+         * possono verificarsi eccezioni tecniche:
+         *
+         * - errori Mapper;
+         * - errori Repository;
+         * - errori database.
+         *
+         * Le convertiamo in ServiceException.
+         */
         try {
 
             /*
-             * Converte il DTO nella Entity User.
+             * ====================================================
+             * DTO -> ENTITY
+             * ====================================================
              */
+
             User user =
-                    userMapper.toEntity(dto);
+                userMapper.toEntity(
+                    dto
+                );
 
             /*
-             * Codifica la password prima del salvataggio.
+             * ====================================================
+             * RUOLO PREDEFINITO
+             * ====================================================
              *
-             * Esempio:
-             *
-             * password123
-             *
-             * diventa qualcosa simile a:
-             *
-             * $2a$10$.....................
+             * Per sicurezza il ruolo iniziale
+             * è sempre USER.
              */
-            String hashedPassword =
-                    passwordService.encode(
-                            user.getPassword()
+            Role roleToAssign =
+                Role.USER;
+
+            /*
+             * Recuperiamo l'eventuale autenticazione
+             * presente nel SecurityContext.
+             *
+             * Anche se POST /users è pubblico,
+             * JwtAuthenticationFilter analizza comunque
+             * un JWT quando viene inviato.
+             */
+            Authentication authentication =
+                SecurityContextHolder
+                    .getContext()
+                    .getAuthentication();
+
+            /*
+             * Controlliamo se chi effettua
+             * la richiesta possiede ROLE_ADMIN.
+             */
+            boolean callerIsAdmin =
+                authentication != null &&
+
+                authentication
+                    .getAuthorities()
+                    .stream()
+                    .anyMatch(
+                        authority ->
+                            "ROLE_ADMIN".equals(
+                                authority.getAuthority()
+                            )
                     );
 
             /*
-             * Sostituisce la password in chiaro
-             * con quella hashata.
+             * Solamente un ADMIN autenticato
+             * può specificare un ruolo diverso.
              */
-            user.setPassword(
-                    hashedPassword
+            if (
+                callerIsAdmin &&
+                dto.getRole() != null
+            ) {
+
+                roleToAssign =
+                    dto.getRole();
+            }
+
+            /*
+             * Assegniamo il ruolo definitivo.
+             *
+             * Caso utente anonimo:
+             *
+             * dto.role = ADMIN
+             *
+             * viene comunque trasformato in:
+             *
+             * USER.
+             */
+            user.setRole(
+                roleToAssign
             );
 
             /*
-             * Salva l'utente.
-             *
-             * Nel database verrà quindi memorizzato
-             * solamente l'hash.
+             * ====================================================
+             * PASSWORD
+             * ====================================================
              */
-            userRepo.save(user);
+
+            String hashedPassword =
+                passwordService.encode(
+                    user.getPassword()
+                );
+
+            user.setPassword(
+                hashedPassword
+            );
 
             /*
-             * Converte l'utente salvato nel DTO.
+             * ====================================================
+             * SALVATAGGIO
+             * ====================================================
              */
-            return userMapper.toDto(user);
+
+            User saved =
+                userRepo.save(
+                    user
+                );
+
+            /*
+             * Entity -> DTO.
+             */
+            return userMapper.toDto(
+                saved
+            );
 
         }
         catch (Exception e) {
 
+            /*
+             * Nella versione precedente avevamo:
+             *
+             * catch (ServiceException e)
+             *
+             * ma all'interno del try non veniva lanciata
+             * nessuna ServiceException checked.
+             *
+             * Java quindi generava:
+             *
+             * "exception ServiceException is never thrown
+             * in body of corresponding try statement"
+             *
+             * Ora intercettiamo solamente
+             * eventuali eccezioni tecniche reali.
+             */
+
+            String message =
+                e.getMessage();
+
+            if (
+                message == null ||
+                message.isBlank()
+            ) {
+
+                message =
+                    "Errore durante la creazione dell'utente";
+            }
+
             throw new ServiceException(
-                    e.getMessage()
+                message
             );
         }
     }

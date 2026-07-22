@@ -12,7 +12,6 @@ import com.generation.hairlab.dto.StyleRecommendationDto;
 import com.generation.hairlab.mapper.ColorAnalysisMapper;
 import com.generation.hairlab.mapper.FaceProfileMapper;
 import com.generation.hairlab.mapper.HairProfileMapper;
-import com.generation.hairlab.model.HairProfile;
 import com.generation.hairlab.repository.ColorAnalysisRepository;
 import com.generation.hairlab.repository.FaceProfileRepository;
 import com.generation.hairlab.repository.HairProfileRepository;
@@ -21,12 +20,11 @@ import lombok.RequiredArgsConstructor;
 
 /**
  * Service aggregatore della scheda tecnica completa
- * di una cliente.
+ * di una cliente HairLab.
  *
  * Non salva nuovi dati.
  *
- * Il suo compito è raccogliere informazioni
- * provenienti da più moduli:
+ * Raccoglie:
  *
  * Customer
  * HairProfile
@@ -34,43 +32,63 @@ import lombok.RequiredArgsConstructor;
  * ColorAnalysis
  * StyleRecommendation
  *
- * e restituirle in un unico DTO.
+ * e restituisce tutto tramite
+ * un singolo CustomerAnalysisDto.
  */
 @Service
 @RequiredArgsConstructor
 public class CustomerAnalysisService {
 
+    /**
+     * Service clienti.
+     */
     private final CustomerService customerService;
 
+    /**
+     * Repository HairProfile.
+     */
     private final HairProfileRepository hairProfileRepository;
 
+    /**
+     * Repository FaceProfile.
+     */
     private final FaceProfileRepository faceProfileRepository;
 
+    /**
+     * Repository ColorAnalysis.
+     */
     private final ColorAnalysisRepository colorAnalysisRepository;
 
+    /**
+     * Mapper HairProfile.
+     */
     private final HairProfileMapper hairProfileMapper;
 
+    /**
+     * Mapper FaceProfile.
+     */
     private final FaceProfileMapper faceProfileMapper;
 
+    /**
+     * Mapper ColorAnalysis.
+     */
     private final ColorAnalysisMapper colorAnalysisMapper;
 
+    /**
+     * Motore dei suggerimenti HairLab.
+     */
     private final StyleRecommendationService
         styleRecommendationService;
 
     /**
-     * Costruisce la scheda completa
+     * Costruisce l'intera analisi
      * di una cliente.
      *
-     * I profili mancanti vengono restituiti
-     * come null.
+     * I profili mancanti vengono restituiti come null.
      *
-     * Questo è importante perché l'assenza
-     * di un profilo non deve impedire
-     * l'apertura della pagina cliente.
-     *
-     * @param customerId ID della cliente
-     * @return analisi aggregata
-     * @throws ServiceException se il cliente non esiste
+     * Questo permette alla pagina cliente
+     * di essere caricata anche quando alcune
+     * sezioni non sono ancora state compilate.
      */
     @Transactional(readOnly = true)
     public CustomerAnalysisDto findByCustomerId(
@@ -78,9 +96,9 @@ public class CustomerAnalysisService {
             throws ServiceException {
 
         /*
-         * ============================================================
+         * ========================================================
          * CUSTOMER
-         * ============================================================
+         * ========================================================
          */
 
         CustomerDto customer =
@@ -89,42 +107,37 @@ public class CustomerAnalysisService {
             );
 
         /*
-         * ============================================================
+         * ========================================================
          * HAIR PROFILE
-         * ============================================================
+         * ========================================================
          *
-         * Utilizziamo findAll() così questo Service
-         * non richiede necessariamente un metodo custom
-         * findByCustomerId nel Repository.
+         * Utilizziamo direttamente
+         * findByCustomerId().
+         *
+         * Evitiamo:
+         *
+         * findAll()
+         * -> stream()
+         * -> filter()
+         *
+         * che caricherebbe inutilmente
+         * tutte le HairProfile dal database.
          */
 
-        HairProfile hairProfileEntity =
+        HairProfileDto hairProfile =
             hairProfileRepository
-                .findAll()
-                .stream()
-                .filter(
-                    profile ->
-                        profile.getCustomer() != null &&
-                        customerId.equals(
-                            profile
-                                .getCustomer()
-                                .getId()
-                        )
+                .findByCustomerId(
+                    customerId
                 )
-                .findFirst()
+                .map(
+                    hairProfileMapper::toDto
+                )
                 .orElse(null);
 
-        HairProfileDto hairProfile =
-            hairProfileEntity == null
-                ? null
-                : hairProfileMapper.toDto(
-                    hairProfileEntity
-                );
-
         /*
-         * ============================================================
+         * ========================================================
          * FACE PROFILE
-         * ============================================================
+         * ========================================================
          */
 
         FaceProfileDto faceProfile =
@@ -138,9 +151,9 @@ public class CustomerAnalysisService {
                 .orElse(null);
 
         /*
-         * ============================================================
+         * ========================================================
          * COLOR ANALYSIS
-         * ============================================================
+         * ========================================================
          */
 
         ColorAnalysisDto colorAnalysis =
@@ -154,19 +167,14 @@ public class CustomerAnalysisService {
                 .orElse(null);
 
         /*
-         * ============================================================
-         * STYLE RECOMMENDATION
-         * ============================================================
+         * ========================================================
+         * STYLE RECOMMENDATIONS
+         * ========================================================
          *
-         * Il motore lavora anche con profili mancanti.
+         * Il motore è dinamico e non viene salvato.
          *
-         * Esempio:
-         *
-         * FaceProfile presente
-         * ColorAnalysis assente
-         *
-         * può comunque fornire suggerimenti
-         * relativi al taglio.
+         * Può produrre suggerimenti anche
+         * con profili parzialmente compilati.
          */
 
         StyleRecommendationDto recommendations =
@@ -175,9 +183,9 @@ public class CustomerAnalysisService {
             );
 
         /*
-         * ============================================================
-         * DTO FINALE
-         * ============================================================
+         * ========================================================
+         * DTO AGGREGATO
+         * ========================================================
          */
 
         CustomerAnalysisDto result =
@@ -204,13 +212,15 @@ public class CustomerAnalysisService {
         );
 
         /*
-         * Verifichiamo quali sezioni
-         * sono ancora incomplete.
+         * ========================================================
+         * CONTROLLO COMPLETEZZA
+         * ========================================================
          */
 
         if (hairProfile == null) {
 
-            result.getMissingSections()
+            result
+                .getMissingSections()
                 .add(
                     "HAIR_PROFILE"
                 );
@@ -218,7 +228,8 @@ public class CustomerAnalysisService {
 
         if (faceProfile == null) {
 
-            result.getMissingSections()
+            result
+                .getMissingSections()
                 .add(
                     "FACE_PROFILE"
                 );
@@ -226,14 +237,20 @@ public class CustomerAnalysisService {
 
         if (colorAnalysis == null) {
 
-            result.getMissingSections()
+            result
+                .getMissingSections()
                 .add(
                     "COLOR_ANALYSIS"
                 );
         }
 
+        /*
+         * Il profilo è completo solamente
+         * se non manca nessuna sezione.
+         */
         result.setCompleteProfile(
-            result.getMissingSections()
+            result
+                .getMissingSections()
                 .isEmpty()
         );
 

@@ -1,89 +1,227 @@
 package com.generation.hairlab.security;
 
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
+import java.io.IOException;
+import java.util.List;
+
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
 
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
+
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+import lombok.RequiredArgsConstructor;
+
+/**
+ * Filtro eseguito una volta
+ * per ogni richiesta HTTP.
+ *
+ * Il suo compito è:
+ *
+ * 1. leggere l'header Authorization;
+ * 2. estrarre il Bearer Token;
+ * 3. verificare il JWT;
+ * 4. recuperare email e ruolo;
+ * 5. creare l'Authentication;
+ * 6. salvarla nel SecurityContext.
+ */
 @Component
 @RequiredArgsConstructor
-public class JwtAuthenticationFilter extends OncePerRequestFilter {
+public class JwtAuthenticationFilter
+    extends OncePerRequestFilter {
 
-    public final PasswordManager passwordManager;
+    /**
+     * Service centralizzato JWT.
+     */
+    private final JwtService jwtService;
 
-
+    /**
+     * Metodo eseguito automaticamente
+     * da Spring Security per ogni richiesta.
+     */
     @Override
-    protected void doFilterInternal
-    (
-            HttpServletRequest request,         // request, con i suoi header, col suo body, come avete visto in TS
-            HttpServletResponse response,       // la response, che posso trascurare, viene prodotta dopo
-            FilterChain filterChain             // l'elenco degli altri filtri
+    protected void doFilterInternal(
+        HttpServletRequest request,
+        HttpServletResponse response,
+        FilterChain filterChain
     )
-    throws ServletException, IOException {
-        
-        // recupero il valore dell'header Authorization, che è quello che ho impostato
-        // nella chiamata http
-        String authHeader = request.getHeader("Authorization");
-        //'Bearer '+token
+    throws ServletException,
+           IOException {
 
-        System.out.println("Ricevuto "+authHeader);
+        /*
+         * Recupera:
+         *
+         * Authorization:
+         * Bearer eyJhbGciOi...
+         */
+        String authHeader =
+            request.getHeader(
+                "Authorization"
+            );
 
+        /*
+         * Se non esiste un Bearer Token
+         * non autentichiamo nessuno.
+         *
+         * La richiesta continua comunque:
+         *
+         * sarà SecurityConfig a decidere
+         * se quell'endpoint può essere pubblico
+         * oppure richiede autenticazione.
+         */
+        if (
+            authHeader == null ||
+            !authHeader.startsWith(
+                "Bearer "
+            )
+        ) {
 
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            String token = authHeader.substring(7); // Rimuove "Bearer " ed estrae solo il token
-            
-            System.out.println("Ricevuto token"+token);
+            filterChain.doFilter(
+                request,
+                response
+            );
 
-            try {
-                // Recuperiamo l'intero payload (claims) del token con una sola operazione di parsing
-                var claims = Jwts.parser()
-                        .verifyWith(Keys.hmacShaKeyFor(passwordManager.getServerPassword().getBytes(StandardCharsets.UTF_8)))
-                        .build()
-                        .parseSignedClaims(token)
-                        .getPayload();
-
-                String username = claims.getSubject();
-                String role = claims.get("ROLE", String.class);
-                
-                System.out.println("Verificato "+username);
-
-
-                if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                    
-                    // Creiamo la lista di autorità. Se il ruolo esiste, gli iniettiamo davanti il prefisso "ROLE_"
-                    // In questo modo .hasRole("ADMIN") cercherà esattamente "ROLE_ADMIN" e darà il via libera.
-                    List<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_" + role));
-
-                    // Passiamo le autorità reali al token di autenticazione anziché la lista vuota
-                    UsernamePasswordAuthenticationToken authToken = 
-                            new UsernamePasswordAuthenticationToken(username, null, authorities);
-                    
-                    System.out.println("Creo autenticazione");
-
-                    // Salva l'utente nel contesto con i suoi ruoli attivi
-                    SecurityContextHolder.getContext().setAuthentication(authToken);
-
-                    System.out.println(SecurityContextHolder.getContext().getAuthentication());
-                    
-                }
-            } catch (Exception e) {
-                // Token scaduto, manomesso o non valido: non facciamo nulla, la richiesta fallirà l'autorizzazione
-                e.printStackTrace();
-            }
+            return;
         }
 
-        // Passa la richiesta al filtro successivo della catena
-        filterChain.doFilter(request, response);
+        /*
+         * Elimina:
+         *
+         * "Bearer "
+         *
+         * e conserva solamente il JWT.
+         */
+        String token =
+            authHeader.substring(7);
+
+        try {
+
+            /*
+             * Verifica firma, struttura
+             * e scadenza una sola volta.
+             */
+            Claims claims =
+                jwtService.parseToken(
+                    token
+                );
+
+            /*
+             * Il subject contiene l'email.
+             */
+            String username =
+                claims.getSubject();
+
+            /*
+             * Recupera il ruolo.
+             */
+            String role =
+                claims.get(
+                    "ROLE",
+                    String.class
+                );
+
+            /*
+             * Creiamo l'autenticazione solamente se:
+             *
+             * - email presente;
+             * - ruolo presente;
+             * - nessun altro utente già autenticato.
+             */
+            if (
+                username != null &&
+                role != null &&
+                SecurityContextHolder
+                    .getContext()
+                    .getAuthentication()
+                    == null
+            ) {
+
+                /*
+                 * Spring Security utilizza
+                 * convenzionalmente:
+                 *
+                 * ROLE_ADMIN
+                 * ROLE_USER
+                 *
+                 * mentre nel nostro Enum abbiamo:
+                 *
+                 * ADMIN
+                 * USER
+                 */
+                List<SimpleGrantedAuthority>
+                    authorities =
+                        List.of(
+                            new SimpleGrantedAuthority(
+                                "ROLE_" + role
+                            )
+                        );
+
+                /*
+                 * Crea l'oggetto Authentication
+                 * riconosciuto da Spring Security.
+                 */
+                UsernamePasswordAuthenticationToken
+                    authentication =
+                        new UsernamePasswordAuthenticationToken(
+                            username,
+                            null,
+                            authorities
+                        );
+
+                /*
+                 * Salva l'utente autenticato
+                 * nel contesto della richiesta.
+                 */
+                SecurityContextHolder
+                    .getContext()
+                    .setAuthentication(
+                        authentication
+                    );
+            }
+
+        }
+        catch (
+            JwtException |
+            IllegalArgumentException exception
+        ) {
+
+            /*
+             * Token:
+             *
+             * - scaduto;
+             * - manomesso;
+             * - malformato;
+             * - firmato con una chiave diversa.
+             *
+             * Non stampiamo il JWT
+             * e non mostriamo stack trace.
+             *
+             * Semplicemente eliminiamo
+             * l'eventuale autenticazione.
+             */
+            SecurityContextHolder
+                .clearContext();
+        }
+
+        /*
+         * Continua la catena dei filtri.
+         *
+         * SecurityConfig deciderà successivamente:
+         *
+         * endpoint pubblico
+         * oppure
+         * endpoint autenticato.
+         */
+        filterChain.doFilter(
+            request,
+            response
+        );
     }
 }
