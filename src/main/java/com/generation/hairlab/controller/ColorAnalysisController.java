@@ -1,7 +1,10 @@
 package com.generation.hairlab.controller;
 
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -15,143 +18,53 @@ import com.generation.hairlab.dto.ColorAnalysisDto;
 import com.generation.hairlab.service.ColorAnalysisService;
 import com.generation.hairlab.service.ServiceException;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
-/**
- * Controller REST per ColorAnalysis.
- */
+/** Controller REST dedicato all'analisi cromatica. */
 @RestController
 @RequestMapping("/hairlab/api/color-analysis")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:4200")
 public class ColorAnalysisController {
 
     private final ColorAnalysisService colorAnalysisService;
 
     @GetMapping
-    public ResponseEntity<?> findAll() {
-
-        return ResponseEntity.ok(
-            colorAnalysisService.findAll()
-        );
+    public ResponseEntity<List<ColorAnalysisDto>> findAll() {
+        return ResponseEntity.ok(colorAnalysisService.findAll());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> findById(
-            @PathVariable Integer id) {
-
-        try {
-
-            return ResponseEntity.ok(
-                colorAnalysisService.findById(id)
-            );
-
-        } catch (ServiceException e) {
-
-            return ResponseEntity
-                .badRequest()
-                .body(
-                    e.toMap(
-                        "cannot find color analysis"
-                    )
-                );
-        }
+    public ResponseEntity<ColorAnalysisDto> findById(
+            @PathVariable Integer id) throws ServiceException {
+        return ResponseEntity.ok(colorAnalysisService.findById(id));
     }
 
     @GetMapping("/customer/{customerId}")
-    public ResponseEntity<?> findByCustomerId(
-            @PathVariable Integer customerId) {
-
-        try {
-
-            return ResponseEntity.ok(
-                colorAnalysisService
-                    .findByCustomerId(
-                        customerId
-                    )
-            );
-
-        } catch (ServiceException e) {
-
-            return ResponseEntity
-                .badRequest()
-                .body(
-                    e.toMap(
-                        "cannot find customer color analysis"
-                    )
-                );
-        }
+    public ResponseEntity<ColorAnalysisDto> findByCustomerId(
+            @PathVariable Integer customerId) throws ServiceException {
+        return ResponseEntity.ok(colorAnalysisService.findByCustomerId(customerId));
     }
 
     @PostMapping
-    public ResponseEntity<?> insert(
-            @RequestBody ColorAnalysisDto dto) {
-
-        try {
-
-            return ResponseEntity.ok(
-                colorAnalysisService.insert(dto)
-            );
-
-        } catch (ServiceException e) {
-
-            return ResponseEntity
-                .badRequest()
-                .body(
-                    e.toMap(
-                        "cannot save color analysis"
-                    )
-                );
-        }
+    public ResponseEntity<ColorAnalysisDto> insert(
+            @Valid @RequestBody ColorAnalysisDto dto) throws ServiceException {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(colorAnalysisService.insert(dto));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> update(
+    public ResponseEntity<ColorAnalysisDto> update(
             @PathVariable Integer id,
-            @RequestBody ColorAnalysisDto dto) {
-
-        try {
-
-            return ResponseEntity.ok(
-                colorAnalysisService.update(
-                    id,
-                    dto
-                )
-            );
-
-        } catch (ServiceException e) {
-
-            return ResponseEntity
-                .badRequest()
-                .body(
-                    e.toMap(
-                        "cannot update color analysis"
-                    )
-                );
-        }
+            @Valid @RequestBody ColorAnalysisDto dto) throws ServiceException {
+        return ResponseEntity.ok(colorAnalysisService.update(id, dto));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> delete(
-            @PathVariable Integer id) {
-
-        try {
-
-            colorAnalysisService.delete(id);
-
-            return ResponseEntity
-                .noContent()
-                .build();
-
-        } catch (ServiceException e) {
-
-            return ResponseEntity
-                .badRequest()
-                .body(
-                    e.toMap(
-                        "cannot delete color analysis"
-                    )
-                );
-        }
+    public ResponseEntity<Map<String, String>> delete(
+            @PathVariable Integer id) throws ServiceException {
+        colorAnalysisService.delete(id);
+        return ResponseEntity.ok(
+                Map.of("message", "Analisi cromatica eliminata correttamente"));
     }
 }

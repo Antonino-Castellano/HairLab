@@ -3,60 +3,102 @@ package com.generation.hairlab.service;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.generation.hairlab.dto.CustomerDto;
 import com.generation.hairlab.mapper.CustomerMapper;
 import com.generation.hairlab.model.Customer;
+import com.generation.hairlab.repository.AppointmentRepository;
+import com.generation.hairlab.repository.ColorAnalysisRepository;
+import com.generation.hairlab.repository.ConsultationRepository;
 import com.generation.hairlab.repository.CustomerRepository;
+import com.generation.hairlab.repository.FaceProfileRepository;
+import com.generation.hairlab.repository.HairProfileRepository;
 
 import lombok.RequiredArgsConstructor;
 
 /**
- * Service dedicato alla gestione dei clienti.
+ * Service dedicato alla gestione dei clienti HairLab.
  *
- * Coordina Repository e Mapper e applica le regole
- * necessarie prima di leggere o modificare i dati.
+ * Distingue chiaramente:
+ *
+ * - disattivazione logica;
+ * - riattivazione;
+ * - eliminazione fisica definitiva.
+ *
+ * L'eliminazione definitiva viene bloccata
+ * quando il cliente possiede dati storici,
+ * per evitare la perdita accidentale
+ * dello storico professionale.
  */
 @Service
 @RequiredArgsConstructor
 public class CustomerService {
 
-    /**
-     * Repository utilizzato per leggere,
-     * salvare, modificare ed eliminare i clienti.
-     */
-    private final CustomerRepository customerRepository;
+    private final CustomerRepository
+        customerRepository;
+
+    private final AppointmentRepository
+        appointmentRepository;
+
+    private final ConsultationRepository
+        consultationRepository;
+
+    private final HairProfileRepository
+        hairProfileRepository;
+
+    private final FaceProfileRepository
+        faceProfileRepository;
+
+    private final ColorAnalysisRepository
+        colorAnalysisRepository;
+
+    private final CustomerMapper
+        customerMapper;
 
     /**
-     * Mapper utilizzato per convertire:
-     *
-     * Customer -> CustomerDto
-     *
-     * CustomerDto -> Customer
+     * Restituisce tutti i clienti.
      */
-    private final CustomerMapper customerMapper;
-
-    /**
-     * Restituisce tutti i clienti presenti nel database.
-     *
-     * Le Entity vengono convertite in DTO
-     * prima di essere restituite al Controller.
-     */
+    @Transactional(readOnly = true)
     public List<CustomerDto> findAll() {
+
         return customerMapper.toDtoList(
             customerRepository.findAll()
         );
     }
 
     /**
-     * Cerca un cliente tramite il suo ID.
-     *
-     * @param id identificativo del cliente
-     * @return DTO del cliente trovato
-     * @throws ServiceException se il cliente non esiste
+     * Restituisce solamente
+     * i clienti attivi.
      */
-    public CustomerDto findById(Integer id)
+    @Transactional(readOnly = true)
+    public List<CustomerDto> findActive() {
+
+        return customerMapper.toDtoList(
+            customerRepository.findByActiveTrue()
+        );
+    }
+
+    /**
+     * Restituisce solamente
+     * i clienti disattivati.
+     */
+    @Transactional(readOnly = true)
+    public List<CustomerDto> findInactive() {
+
+        return customerMapper.toDtoList(
+            customerRepository.findByActiveFalse()
+        );
+    }
+
+    /**
+     * Cerca un cliente tramite ID.
+     */
+    @Transactional(readOnly = true)
+    public CustomerDto findById(
+            Integer id)
             throws ServiceException {
 
         return customerMapper.toDto(
@@ -66,264 +108,356 @@ public class CustomerService {
 
     /**
      * Inserisce un nuovo cliente.
-     *
-     * Prima verifica che non esista già
-     * un cliente con la stessa email.
-     *
-     * Il Mapper converte automaticamente anche
-     * profileImage perché il campo possiede
-     * lo stesso nome e tipo sia nella Entity
-     * sia nel DTO.
-     *
-     * @param dto dati del nuovo cliente
-     * @return cliente salvato convertito in DTO
-     * @throws ServiceException se l'email è già utilizzata
      */
-    public CustomerDto insert(CustomerDto dto)
+    @Transactional
+    public CustomerDto insert(
+            CustomerDto dto)
             throws ServiceException {
+
+        String normalizedEmail =
+            normalizeEmail(
+                dto.getEmail()
+            );
 
         if (
             customerRepository.existsByEmail(
-                dto.getEmail()
+                normalizedEmail
             )
         ) {
+
             throw new ServiceException(
-                "Esiste già un cliente con questa email"
+                "Esiste già un cliente con questa email",
+                HttpStatus.CONFLICT
             );
         }
 
-        /**
-         * Il Mapper crea una nuova Entity.
-         *
-         * Verranno copiati automaticamente:
-         *
-         * firstName
-         * lastName
-         * phoneNumber
-         * email
-         * dob
-         * active
-         * profileImage
-         *
-         * Non vengono invece copiati:
-         *
-         * id
-         * appointments
-         * createdAt
-         * updatedAt
-         *
-         * perché nel Mapper sono ignorati.
-         */
         Customer customer =
-            customerMapper.toEntity(dto);
+            customerMapper.toEntity(
+                dto
+            );
 
-        /**
-         * Le date tecniche vengono gestite
-         * direttamente dal backend.
+        customer.setFirstName(
+            normalizeText(
+                dto.getFirstName()
+            )
+        );
+
+        customer.setLastName(
+            normalizeText(
+                dto.getLastName()
+            )
+        );
+
+        customer.setPhoneNumber(
+            dto.getPhoneNumber().trim()
+        );
+
+        customer.setEmail(
+            normalizedEmail
+        );
+
+        /*
+         * Un nuovo cliente nasce sempre attivo.
          */
+        customer.setActive(
+            true
+        );
+
+        LocalDateTime now =
+            LocalDateTime.now();
+
         customer.setCreatedAt(
-            LocalDateTime.now()
+            now
         );
 
         customer.setUpdatedAt(
-            LocalDateTime.now()
+            now
         );
 
-        /**
-         * Salviamo il cliente e convertiamo
-         * nuovamente il risultato in DTO.
-         */
-        Customer savedCustomer =
-            customerRepository.save(customer);
+        Customer saved =
+            customerRepository.save(
+                customer
+            );
 
         return customerMapper.toDto(
-            savedCustomer
+            saved
         );
     }
 
     /**
-     * Aggiorna un cliente esistente.
+     * Aggiorna i dati anagrafici.
      *
-     * Prima recuperiamo la vera Entity dal database.
-     *
-     * Questo permette di conservare:
-     *
-     * - ID;
-     * - createdAt;
-     * - relazioni;
-     * - appuntamenti già associati.
-     *
-     * Successivamente aggiorniamo solamente
-     * i campi modificabili.
-     *
-     * @param id identificativo del cliente
-     * @param dto nuovi dati del cliente
-     * @return cliente aggiornato
-     * @throws ServiceException se il cliente non esiste
-     *                          o l'email appartiene
-     *                          a un altro cliente
+     * Lo stato active non viene modificato qui:
+     * attivazione e disattivazione hanno
+     * endpoint dedicati.
      */
+    @Transactional
     public CustomerDto update(
             Integer id,
             CustomerDto dto)
             throws ServiceException {
 
-        /**
-         * Recuperiamo la Entity esistente.
-         */
         Customer customer =
-            getCustomerById(id);
+            getCustomerById(
+                id
+            );
 
-        /**
-         * Cerchiamo un eventuale cliente
-         * con la stessa email.
-         */
+        String normalizedEmail =
+            normalizeEmail(
+                dto.getEmail()
+            );
+
         Customer sameEmail =
             customerRepository
-                .findByEmail(dto.getEmail())
+                .findByEmail(
+                    normalizedEmail
+                )
                 .orElse(null);
 
-        /**
-         * Se troviamo la stessa email,
-         * controlliamo che appartenga
-         * allo stesso cliente.
-         *
-         * In caso contrario impediamo
-         * la modifica.
-         */
         if (
             sameEmail != null &&
-            !sameEmail.getId().equals(id)
+            !sameEmail
+                .getId()
+                .equals(id)
         ) {
+
             throw new ServiceException(
-                "Esiste già un altro cliente con questa email"
+                "Esiste già un altro cliente con questa email",
+                HttpStatus.CONFLICT
             );
         }
 
-        /**
-         * Aggiorniamo i dati anagrafici.
-         */
         customer.setFirstName(
-            dto.getFirstName()
+            normalizeText(
+                dto.getFirstName()
+            )
         );
 
         customer.setLastName(
-            dto.getLastName()
+            normalizeText(
+                dto.getLastName()
+            )
         );
 
         customer.setPhoneNumber(
-            dto.getPhoneNumber()
+            dto.getPhoneNumber().trim()
         );
 
         customer.setEmail(
-            dto.getEmail()
+            normalizedEmail
         );
 
         customer.setDob(
             dto.getDob()
         );
 
-        customer.setActive(
-            dto.isActive()
-        );
-
-        /**
-         * Aggiorniamo anche la foto profilo.
-         *
-         * profileImage contiene la stringa Base64
-         * generata dal frontend.
-         *
-         * Se il frontend invia null,
-         * la foto verrà rimossa.
-         */
         customer.setProfileImage(
             dto.getProfileImage()
         );
 
-        /**
-         * Aggiorniamo solamente updatedAt.
-         *
-         * createdAt rimane invariato perché
-         * rappresenta la data originale
-         * di creazione del cliente.
-         */
         customer.setUpdatedAt(
             LocalDateTime.now()
         );
 
-        /**
-         * Salviamo le modifiche.
-         */
-        Customer updatedCustomer =
-            customerRepository.save(customer);
-
-        /**
-         * Restituiamo il cliente aggiornato
-         * convertito in DTO.
-         */
         return customerMapper.toDto(
-            updatedCustomer
+            customerRepository.save(
+                customer
+            )
         );
     }
 
     /**
-     * Elimina un cliente tramite ID.
+     * Disattiva il cliente.
      *
-     * Prima recuperiamo il cliente per verificare
-     * che esista realmente.
-     *
-     * @param id identificativo del cliente
-     * @throws ServiceException se il cliente non esiste
+     * Il record rimane nel database
+     * e conserva tutto lo storico.
      */
-    public void delete(Integer id)
+    @Transactional
+    public CustomerDto deactivate(
+            Integer id)
             throws ServiceException {
 
+        Customer customer =
+            getCustomerById(
+                id
+            );
+
+        if (
+            !customer.isActive()
+        ) {
+
+            return customerMapper.toDto(
+                customer
+            );
+        }
+
+        customer.setActive(
+            false
+        );
+
+        customer.setUpdatedAt(
+            LocalDateTime.now()
+        );
+
+        return customerMapper.toDto(
+            customerRepository.save(
+                customer
+            )
+        );
+    }
+
+    /**
+     * Riattiva un cliente.
+     */
+    @Transactional
+    public CustomerDto activate(
+            Integer id)
+            throws ServiceException {
+
+        Customer customer =
+            getCustomerById(
+                id
+            );
+
+        if (
+            customer.isActive()
+        ) {
+
+            return customerMapper.toDto(
+                customer
+            );
+        }
+
+        customer.setActive(
+            true
+        );
+
+        customer.setUpdatedAt(
+            LocalDateTime.now()
+        );
+
+        return customerMapper.toDto(
+            customerRepository.save(
+                customer
+            )
+        );
+    }
+
+    /**
+     * Elimina DEFINITIVAMENTE
+     * il cliente dal database.
+     *
+     * A differenza della versione precedente,
+     * NON è necessario disattivarlo prima.
+     *
+     * Il pulsante Elimina può quindi essere usato
+     * direttamente anche su un cliente attivo.
+     *
+     * L'eliminazione viene però bloccata
+     * quando esistono dati storici collegati.
+     */
+    @Transactional
+    public void delete(
+            Integer id)
+            throws ServiceException {
+
+        Customer customer =
+            getCustomerById(
+                id
+            );
+
+        boolean hasAppointments =
+            !appointmentRepository
+                .findByCustomer_IdOrderByStartDateTimeDesc(
+                    id
+                )
+                .isEmpty();
+
+        boolean hasConsultations =
+            !consultationRepository
+                .findByCustomer_IdOrderByConsultationDateDesc(
+                    id
+                )
+                .isEmpty();
+
+        boolean hasHairProfile =
+            hairProfileRepository
+                .existsByCustomerId(
+                    id
+                );
+
+        boolean hasFaceProfile =
+            faceProfileRepository
+                .existsByCustomerId(
+                    id
+                );
+
+        boolean hasColorAnalysis =
+            colorAnalysisRepository
+                .existsByCustomerId(
+                    id
+                );
+
+        if (
+            hasAppointments ||
+            hasConsultations ||
+            hasHairProfile ||
+            hasFaceProfile ||
+            hasColorAnalysis
+        ) {
+
+            throw new ServiceException(
+                "Il cliente possiede dati storici e non può essere eliminato definitivamente. Puoi disattivarlo per conservarne lo storico.",
+                HttpStatus.CONFLICT
+            );
+        }
+
+        /*
+         * Qui avviene la vera cancellazione fisica.
+         */
         customerRepository.delete(
-            getCustomerById(id)
+            customer
         );
     }
 
     /**
-     * Restituisce solamente i clienti
-     * che hanno active = true.
-     *
-     * @return lista dei clienti attivi
+     * Restituisce la Entity Customer.
      */
-    public List<CustomerDto> findActive() {
-
-        return customerMapper.toDtoList(
-            customerRepository
-                .findByActiveTrue()
-        );
-    }
-
-    /**
-     * Restituisce la vera Entity Customer.
-     *
-     * Questo metodo è utile anche agli altri Service
-     * quando devono creare una relazione con Customer.
-     *
-     * Esempio:
-     *
-     * HairProfileService
-     * AppointmentService
-     * ConsultationService
-     *
-     * possono recuperare la Entity reale tramite ID.
-     *
-     * @param id identificativo del cliente
-     * @return Entity Customer
-     * @throws ServiceException se il cliente non esiste
-     */
-    public Customer getCustomerById(Integer id)
+    @Transactional(readOnly = true)
+    public Customer getCustomerById(
+            Integer id)
             throws ServiceException {
 
         return customerRepository
-            .findById(id)
+            .findById(
+                id
+            )
             .orElseThrow(
-                () -> new ServiceException(
-                    "Cliente non trovato con id: " + id
-                )
+                () ->
+                    new ServiceException(
+                        "Cliente non trovato con id: " + id,
+                        HttpStatus.NOT_FOUND
+                    )
             );
+    }
+
+    /**
+     * Normalizza l'email.
+     */
+    private String normalizeEmail(
+            String email) {
+
+        return email
+            .trim()
+            .toLowerCase();
+    }
+
+    /**
+     * Elimina gli spazi esterni.
+     */
+    private String normalizeText(
+            String value) {
+
+        return value.trim();
     }
 }

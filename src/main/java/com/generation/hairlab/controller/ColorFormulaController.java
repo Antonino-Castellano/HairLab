@@ -1,10 +1,10 @@
 package com.generation.hairlab.controller;
 
+import java.util.List;
 import java.util.Map;
 
-
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -18,88 +18,54 @@ import com.generation.hairlab.dto.ColorFormulaDto;
 import com.generation.hairlab.service.ColorFormulaService;
 import com.generation.hairlab.service.ServiceException;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
-/**
- * Controller REST dedicato alle formule colore.
- *
- * Permette di gestire il CRUD e di recuperare le formule associate
- * a una specifica consulenza.
- */
+/** Controller REST dedicato alle formule colore. */
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/hairlab/api/color-formula")
-@CrossOrigin(origins = "http://localhost:4200")
 public class ColorFormulaController {
 
-    /** Service dedicato alle formule colore. */
     private final ColorFormulaService colorFormulaService;
 
-    /** Restituisce tutte le formule colore. */
     @GetMapping
-    public ResponseEntity<?> findAll() {
+    public ResponseEntity<List<ColorFormulaDto>> findAll() {
         return ResponseEntity.ok(colorFormulaService.findAll());
     }
 
-    /** Cerca una formula tramite ID. */
     @GetMapping("/{id}")
-    public ResponseEntity<?> findById(@PathVariable Integer id) {
-        try {
-            return ResponseEntity.ok(colorFormulaService.findById(id));
-        } catch (ServiceException e) {
-            return ResponseEntity.badRequest()
-                    .body(e.toMap("Ricerca formula colore fallita"));
-        }
+    public ResponseEntity<ColorFormulaDto> findById(
+            @PathVariable Integer id) throws ServiceException {
+        return ResponseEntity.ok(colorFormulaService.findById(id));
     }
 
-    /**
-     * Restituisce le formule associate a una consulenza.
-     *
-     * @param consultationId identificativo della consulenza
-     */
     @GetMapping("/consultation/{consultationId}")
-    public ResponseEntity<?> findByConsultation(
+    public ResponseEntity<List<ColorFormulaDto>> findByConsultation(
             @PathVariable Integer consultationId) {
-
         return ResponseEntity.ok(
                 colorFormulaService.findByConsultation(consultationId));
     }
 
-    /** Inserisce una nuova formula colore. */
     @PostMapping
-    public ResponseEntity<?> insert(@RequestBody ColorFormulaDto dto) {
-        try {
-            return ResponseEntity.ok(colorFormulaService.insert(dto));
-        } catch (ServiceException e) {
-            return ResponseEntity.badRequest()
-                    .body(e.toMap("Inserimento formula colore fallito"));
-        }
+    public ResponseEntity<ColorFormulaDto> insert(
+            @Valid @RequestBody ColorFormulaDto dto) throws ServiceException {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(colorFormulaService.insert(dto));
     }
 
-    /** Aggiorna una formula colore esistente. */
     @PutMapping("/{id}")
-    public ResponseEntity<?> update(
+    public ResponseEntity<ColorFormulaDto> update(
             @PathVariable Integer id,
-            @RequestBody ColorFormulaDto dto) {
-
-        try {
-            return ResponseEntity.ok(colorFormulaService.update(id, dto));
-        } catch (ServiceException e) {
-            return ResponseEntity.badRequest()
-                    .body(e.toMap("Aggiornamento formula colore fallito"));
-        }
+            @Valid @RequestBody ColorFormulaDto dto) throws ServiceException {
+        return ResponseEntity.ok(colorFormulaService.update(id, dto));
     }
 
-    /** Elimina una formula colore tramite ID. */
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> delete(@PathVariable Integer id) {
-        try {
-            colorFormulaService.delete(id);
-            return ResponseEntity.ok(
-                    Map.of("message", "Formula colore eliminata correttamente"));
-        } catch (ServiceException e) {
-            return ResponseEntity.badRequest()
-                    .body(e.toMap("Eliminazione formula colore fallita"));
-        }
+    public ResponseEntity<Map<String, String>> delete(
+            @PathVariable Integer id) throws ServiceException {
+        colorFormulaService.delete(id);
+        return ResponseEntity.ok(
+                Map.of("message", "Formula colore eliminata correttamente"));
     }
 }

@@ -1,10 +1,10 @@
 package com.generation.hairlab.controller;
 
+import java.util.List;
 import java.util.Map;
 
-
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -18,88 +18,53 @@ import com.generation.hairlab.dto.ConsultationDto;
 import com.generation.hairlab.service.ConsultationService;
 import com.generation.hairlab.service.ServiceException;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
-/**
- * Controller REST dedicato alle consulenze tecniche HairLab.
- *
- * Espone il CRUD e lo storico delle consulenze associate a un cliente.
- */
+/** Controller REST dedicato alle consulenze tecniche. */
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/hairlab/api/consultation")
-@CrossOrigin(origins = "http://localhost:4200")
 public class ConsultationController {
 
-    /** Service dedicato alle consulenze. */
-   
     private final ConsultationService consultationService;
 
-    /** Restituisce tutte le consulenze. */
     @GetMapping
-    public ResponseEntity<?> findAll() {
+    public ResponseEntity<List<ConsultationDto>> findAll() {
         return ResponseEntity.ok(consultationService.findAll());
     }
 
-    /** Cerca una consulenza tramite ID. */
     @GetMapping("/{id}")
-    public ResponseEntity<?> findById(@PathVariable Integer id) {
-        try {
-            return ResponseEntity.ok(consultationService.findById(id));
-        } catch (ServiceException e) {
-            return ResponseEntity.badRequest()
-                    .body(e.toMap("Ricerca consulenza fallita"));
-        }
+    public ResponseEntity<ConsultationDto> findById(
+            @PathVariable Integer id) throws ServiceException {
+        return ResponseEntity.ok(consultationService.findById(id));
     }
 
-    /**
-     * Restituisce lo storico delle consulenze di un cliente.
-     *
-     * @param customerId identificativo del cliente
-     */
     @GetMapping("/customer/{customerId}")
-    public ResponseEntity<?> findByCustomer(
+    public ResponseEntity<List<ConsultationDto>> findByCustomer(
             @PathVariable Integer customerId) {
-
-        return ResponseEntity.ok(
-                consultationService.findByCustomer(customerId));
+        return ResponseEntity.ok(consultationService.findByCustomer(customerId));
     }
 
-    /** Inserisce una nuova consulenza. */
     @PostMapping
-    public ResponseEntity<?> insert(@RequestBody ConsultationDto dto) {
-        try {
-            return ResponseEntity.ok(consultationService.insert(dto));
-        } catch (ServiceException e) {
-            return ResponseEntity.badRequest()
-                    .body(e.toMap("Inserimento consulenza fallito"));
-        }
+    public ResponseEntity<ConsultationDto> insert(
+            @Valid @RequestBody ConsultationDto dto) throws ServiceException {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(consultationService.insert(dto));
     }
 
-    /** Aggiorna una consulenza esistente. */
     @PutMapping("/{id}")
-    public ResponseEntity<?> update(
+    public ResponseEntity<ConsultationDto> update(
             @PathVariable Integer id,
-            @RequestBody ConsultationDto dto) {
-
-        try {
-            return ResponseEntity.ok(consultationService.update(id, dto));
-        } catch (ServiceException e) {
-            return ResponseEntity.badRequest()
-                    .body(e.toMap("Aggiornamento consulenza fallito"));
-        }
+            @Valid @RequestBody ConsultationDto dto) throws ServiceException {
+        return ResponseEntity.ok(consultationService.update(id, dto));
     }
 
-    /** Elimina una consulenza tramite ID. */
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> delete(@PathVariable Integer id) {
-        try {
-            consultationService.delete(id);
-            return ResponseEntity.ok(
-                    Map.of("message", "Consulenza eliminata correttamente"));
-        } catch (ServiceException e) {
-            return ResponseEntity.badRequest()
-                    .body(e.toMap("Eliminazione consulenza fallita"));
-        }
+    public ResponseEntity<Map<String, String>> delete(
+            @PathVariable Integer id) throws ServiceException {
+        consultationService.delete(id);
+        return ResponseEntity.ok(
+                Map.of("message", "Consulenza eliminata correttamente"));
     }
 }

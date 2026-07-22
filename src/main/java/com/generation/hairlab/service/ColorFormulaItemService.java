@@ -6,6 +6,8 @@ import java.util.Set;
 
 
 import org.springframework.stereotype.Service;
+import org.springframework.http.HttpStatus;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.generation.hairlab.dto.ColorFormulaItemDto;
 import com.generation.hairlab.mapper.ColorFormulaItemMapper;
@@ -38,16 +40,19 @@ public class ColorFormulaItemService {
     private final ColorFormulaItemMapper colorFormulaItemMapper;
 
     /** Restituisce tutti gli elementi delle formule. */
+    @Transactional(readOnly = true)
     public List<ColorFormulaItemDto> findAll() {
         return colorFormulaItemMapper.toDtoList(colorFormulaItemRepository.findAll());
     }
 
     /** Cerca un elemento tramite ID. */
+    @Transactional(readOnly = true)
     public ColorFormulaItemDto findById(Integer id) throws ServiceException {
         return colorFormulaItemMapper.toDto(getColorFormulaItemById(id));
     }
 
     /** Restituisce gli item appartenenti a una formula. */
+    @Transactional(readOnly = true)
     public List<ColorFormulaItemDto> findByFormula(Integer colorFormulaId) {
         return colorFormulaItemMapper.toDtoList(
                 colorFormulaItemRepository.findByColorFormula_Id(colorFormulaId));
@@ -58,6 +63,7 @@ public class ColorFormulaItemService {
      *
      * Verifica quantità e presenza delle tinte indicate nel DTO.
      */
+    @Transactional
     public ColorFormulaItemDto insert(ColorFormulaItemDto dto)
             throws ServiceException {
 
@@ -76,6 +82,7 @@ public class ColorFormulaItemService {
     }
 
     /** Aggiorna un elemento della formula. */
+    @Transactional
     public ColorFormulaItemDto update(Integer id, ColorFormulaItemDto dto)
             throws ServiceException {
 
@@ -93,23 +100,27 @@ public class ColorFormulaItemService {
     }
 
     /** Elimina un elemento della formula. */
+    @Transactional
     public void delete(Integer id) throws ServiceException {
         colorFormulaItemRepository.delete(getColorFormulaItemById(id));
     }
 
     /** Restituisce la Entity ColorFormulaItem tramite ID. */
+    @Transactional(readOnly = true)
     public ColorFormulaItem getColorFormulaItemById(Integer id)
             throws ServiceException {
 
         return colorFormulaItemRepository.findById(id)
                 .orElseThrow(() -> new ServiceException(
-                        "ColorFormulaItem non trovato con id: " + id));
+                        "ColorFormulaItem non trovato con id: " + id,
+                        HttpStatus.NOT_FOUND));
     }
 
     private ColorFormula getColorFormula(Integer id) throws ServiceException {
         return colorFormulaRepository.findById(id)
                 .orElseThrow(() -> new ServiceException(
-                        "Formula colore non trovata con id: " + id));
+                        "Formula colore non trovata con id: " + id,
+                        HttpStatus.NOT_FOUND));
     }
 
     /**
@@ -129,13 +140,15 @@ public class ColorFormulaItemService {
 
         if (found.size() != ids.size()) {
             throw new ServiceException(
-                    "Uno o più HairDye indicati non esistono");
+                    "Uno o più HairDye indicati non esistono",
+                    HttpStatus.NOT_FOUND);
         }
 
         for (HairDye hairDye : found) {
             if (!hairDye.isActive()) {
                 throw new ServiceException(
-                        "Uno o più HairDye selezionati non sono attivi");
+                        "Uno o più HairDye selezionati non sono attivi",
+                        HttpStatus.CONFLICT);
             }
         }
 

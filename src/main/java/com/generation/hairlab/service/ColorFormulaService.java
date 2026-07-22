@@ -4,6 +4,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import org.springframework.http.HttpStatus;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.generation.hairlab.dto.ColorFormulaDto;
 import com.generation.hairlab.mapper.ColorFormulaMapper;
@@ -35,16 +37,19 @@ public class ColorFormulaService {
     private final ColorFormulaMapper colorFormulaMapper;
 
     /** Restituisce tutte le formule colore. */
+    @Transactional(readOnly = true)
     public List<ColorFormulaDto> findAll() {
         return colorFormulaMapper.toDtoList(colorFormulaRepository.findAll());
     }
 
     /** Cerca una formula tramite ID. */
+    @Transactional(readOnly = true)
     public ColorFormulaDto findById(Integer id) throws ServiceException {
         return colorFormulaMapper.toDto(getColorFormulaById(id));
     }
 
     /** Restituisce le formule associate a una consulenza. */
+    @Transactional(readOnly = true)
     public List<ColorFormulaDto> findByConsultation(Integer consultationId) {
         return colorFormulaMapper.toDtoList(
                 colorFormulaRepository
@@ -56,10 +61,13 @@ public class ColorFormulaService {
      *
      * Verifica l'unicità del nome e risolve le relazioni tramite ID.
      */
+    @Transactional
     public ColorFormulaDto insert(ColorFormulaDto dto) throws ServiceException {
 
         if (colorFormulaRepository.existsByNameIgnoreCase(dto.getName())) {
-            throw new ServiceException("Esiste già una formula con questo nome");
+            throw new ServiceException(
+                    "Esiste già una formula con questo nome",
+                    HttpStatus.CONFLICT);
         }
 
         Consultation consultation = getConsultation(dto.getConsultationId());
@@ -76,6 +84,7 @@ public class ColorFormulaService {
     }
 
     /** Aggiorna una formula colore esistente. */
+    @Transactional
     public ColorFormulaDto update(Integer id, ColorFormulaDto dto)
             throws ServiceException {
 
@@ -86,7 +95,9 @@ public class ColorFormulaService {
                 .orElse(null);
 
         if (sameName != null && !sameName.getId().equals(id)) {
-            throw new ServiceException("Esiste già un'altra formula con questo nome");
+            throw new ServiceException(
+                    "Esiste già un'altra formula con questo nome",
+                    HttpStatus.CONFLICT);
         }
 
         formula.setConsultation(getConsultation(dto.getConsultationId()));
@@ -102,21 +113,25 @@ public class ColorFormulaService {
     }
 
     /** Elimina una formula colore tramite ID. */
+    @Transactional
     public void delete(Integer id) throws ServiceException {
         colorFormulaRepository.delete(getColorFormulaById(id));
     }
 
     /** Restituisce la Entity ColorFormula tramite ID. */
+    @Transactional(readOnly = true)
     public ColorFormula getColorFormulaById(Integer id) throws ServiceException {
         return colorFormulaRepository.findById(id)
                 .orElseThrow(() -> new ServiceException(
-                        "Formula colore non trovata con id: " + id));
+                        "Formula colore non trovata con id: " + id,
+                        HttpStatus.NOT_FOUND));
     }
 
     private Consultation getConsultation(Integer id) throws ServiceException {
         return consultationRepository.findById(id)
                 .orElseThrow(() -> new ServiceException(
-                        "Consulenza non trovata con id: " + id));
+                        "Consulenza non trovata con id: " + id,
+                        HttpStatus.NOT_FOUND));
     }
 
     private AppointmentItem getAppointmentItem(Integer id)
@@ -124,6 +139,7 @@ public class ColorFormulaService {
 
         return appointmentItemRepository.findById(id)
                 .orElseThrow(() -> new ServiceException(
-                        "AppointmentItem non trovato con id: " + id));
+                        "AppointmentItem non trovato con id: " + id,
+                        HttpStatus.NOT_FOUND));
     }
 }

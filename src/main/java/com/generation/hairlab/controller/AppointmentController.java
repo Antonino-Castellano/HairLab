@@ -1,12 +1,12 @@
 package com.generation.hairlab.controller;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 
-
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -22,131 +22,70 @@ import com.generation.hairlab.enums.AppointmentStatus;
 import com.generation.hairlab.service.AppointmentService;
 import com.generation.hairlab.service.ServiceException;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
-/**
- * Controller REST dedicato alla gestione degli appuntamenti.
- *
- * Oltre al CRUD standard espone endpoint per filtrare gli appuntamenti
- * per cliente, stato e intervallo temporale, utili per agenda e storico.
- */
+/** Controller REST dedicato alla gestione degli appuntamenti. */
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/hairlab/api/appointment")
-@CrossOrigin(origins = "http://localhost:4200")
 public class AppointmentController {
 
-    /** Service dedicato agli appuntamenti. */
     private final AppointmentService appointmentService;
 
-    /** Restituisce tutti gli appuntamenti. */
     @GetMapping
-    public ResponseEntity<?> findAll() {
+    public ResponseEntity<List<AppointmentDto>> findAll() {
         return ResponseEntity.ok(appointmentService.findAll());
     }
 
-    /** Cerca un appuntamento tramite ID. */
     @GetMapping("/{id}")
-    public ResponseEntity<?> findById(@PathVariable Integer id) {
-        try {
-            return ResponseEntity.ok(appointmentService.findById(id));
-        } catch (ServiceException e) {
-            return ResponseEntity.badRequest()
-                    .body(e.toMap("Ricerca appuntamento fallita"));
-        }
+    public ResponseEntity<AppointmentDto> findById(
+            @PathVariable Integer id) throws ServiceException {
+        return ResponseEntity.ok(appointmentService.findById(id));
     }
 
-    /**
-     * Restituisce lo storico degli appuntamenti di un cliente.
-     *
-     * GET /hairlab/api/appointment/customer/{customerId}
-     *
-     * @param customerId identificativo del cliente
-     */
     @GetMapping("/customer/{customerId}")
-    public ResponseEntity<?> findByCustomer(
+    public ResponseEntity<List<AppointmentDto>> findByCustomer(
             @PathVariable Integer customerId) {
-
-        return ResponseEntity.ok(
-                appointmentService.findByCustomer(customerId));
+        return ResponseEntity.ok(appointmentService.findByCustomer(customerId));
     }
 
-    /**
-     * Filtra gli appuntamenti in base allo stato.
-     *
-     * Esempio:
-     * GET /hairlab/api/appointment/status/BOOKED
-     *
-     * @param status stato dell'appuntamento
-     */
     @GetMapping("/status/{status}")
-    public ResponseEntity<?> findByStatus(
+    public ResponseEntity<List<AppointmentDto>> findByStatus(
             @PathVariable AppointmentStatus status) {
-
-        return ResponseEntity.ok(
-                appointmentService.findByStatus(status));
+        return ResponseEntity.ok(appointmentService.findByStatus(status));
     }
 
-    /**
-     * Restituisce gli appuntamenti compresi in un intervallo temporale.
-     *
-     * Le date devono essere inviate in formato ISO-8601, ad esempio:
-     * 2026-07-20T00:00:00
-     *
-     * GET /hairlab/api/appointment/between?start=...&end=...
-     *
-     * @param start data/ora iniziale
-     * @param end data/ora finale
-     */
     @GetMapping("/between")
-    public ResponseEntity<?> findBetween(
+    public ResponseEntity<List<AppointmentDto>> findBetween(
             @RequestParam
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
             LocalDateTime start,
-
             @RequestParam
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
             LocalDateTime end) {
-
-        return ResponseEntity.ok(
-                appointmentService.findBetween(start, end));
+        return ResponseEntity.ok(appointmentService.findBetween(start, end));
     }
 
-    /** Inserisce un nuovo appuntamento. */
     @PostMapping
-    public ResponseEntity<?> insert(@RequestBody AppointmentDto dto) {
-        try {
-            return ResponseEntity.ok(appointmentService.insert(dto));
-        } catch (ServiceException e) {
-            return ResponseEntity.badRequest()
-                    .body(e.toMap("Inserimento appuntamento fallito"));
-        }
+    public ResponseEntity<AppointmentDto> insert(
+            @Valid @RequestBody AppointmentDto dto) throws ServiceException {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(appointmentService.insert(dto));
     }
 
-    /** Aggiorna un appuntamento esistente. */
     @PutMapping("/{id}")
-    public ResponseEntity<?> update(
+    public ResponseEntity<AppointmentDto> update(
             @PathVariable Integer id,
-            @RequestBody AppointmentDto dto) {
-
-        try {
-            return ResponseEntity.ok(appointmentService.update(id, dto));
-        } catch (ServiceException e) {
-            return ResponseEntity.badRequest()
-                    .body(e.toMap("Aggiornamento appuntamento fallito"));
-        }
+            @Valid @RequestBody AppointmentDto dto) throws ServiceException {
+        return ResponseEntity.ok(appointmentService.update(id, dto));
     }
 
-    /** Elimina un appuntamento tramite ID. */
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> delete(@PathVariable Integer id) {
-        try {
-            appointmentService.delete(id);
-            return ResponseEntity.ok(
-                    Map.of("message", "Appuntamento eliminato correttamente"));
-        } catch (ServiceException e) {
-            return ResponseEntity.badRequest()
-                    .body(e.toMap("Eliminazione appuntamento fallita"));
-        }
+    public ResponseEntity<Map<String, String>> delete(
+            @PathVariable Integer id) throws ServiceException {
+        appointmentService.delete(id);
+        return ResponseEntity.ok(
+                Map.of("message", "Appuntamento eliminato correttamente"));
     }
 }

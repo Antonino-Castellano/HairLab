@@ -4,6 +4,8 @@ import java.util.List;
 
 
 import org.springframework.stereotype.Service;
+import org.springframework.http.HttpStatus;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.generation.hairlab.dto.ConsultationDto;
 import com.generation.hairlab.mapper.ConsultationMapper;
@@ -39,16 +41,19 @@ public class ConsultationService {
     private final ConsultationMapper consultationMapper;
 
     /** Restituisce tutte le consulenze. */
+    @Transactional(readOnly = true)
     public List<ConsultationDto> findAll() {
         return consultationMapper.toDtoList(consultationRepository.findAll());
     }
 
     /** Cerca una consulenza tramite ID. */
+    @Transactional(readOnly = true)
     public ConsultationDto findById(Integer id) throws ServiceException {
         return consultationMapper.toDto(getConsultationById(id));
     }
 
     /** Restituisce lo storico delle consulenze di un cliente. */
+    @Transactional(readOnly = true)
     public List<ConsultationDto> findByCustomer(Integer customerId) {
         return consultationMapper.toDtoList(
                 consultationRepository
@@ -56,6 +61,7 @@ public class ConsultationService {
     }
 
     /** Inserisce una nuova consulenza tecnica. */
+    @Transactional
     public ConsultationDto insert(ConsultationDto dto) throws ServiceException {
 
         Customer customer = getCustomer(dto.getCustomerId());
@@ -72,6 +78,7 @@ public class ConsultationService {
     }
 
     /** Aggiorna una consulenza esistente. */
+    @Transactional
     public ConsultationDto update(Integer id, ConsultationDto dto)
             throws ServiceException {
 
@@ -94,27 +101,50 @@ public class ConsultationService {
     }
 
     /** Elimina una consulenza tramite ID. */
+    @Transactional
     public void delete(Integer id) throws ServiceException {
         consultationRepository.delete(getConsultationById(id));
     }
 
     /** Restituisce la Entity Consultation tramite ID. */
+    @Transactional(readOnly = true)
     public Consultation getConsultationById(Integer id) throws ServiceException {
         return consultationRepository.findById(id)
                 .orElseThrow(() -> new ServiceException(
-                        "Consulenza non trovata con id: " + id));
+                        "Consulenza non trovata con id: " + id,
+                        HttpStatus.NOT_FOUND));
     }
 
     private Customer getCustomer(Integer id) throws ServiceException {
-        return customerRepository.findById(id)
+
+        Customer customer = customerRepository.findById(id)
                 .orElseThrow(() -> new ServiceException(
-                        "Cliente non trovato con id: " + id));
+                        "Cliente non trovato con id: " + id,
+                        HttpStatus.NOT_FOUND));
+
+        if (!customer.isActive()) {
+            throw new ServiceException(
+                    "Il cliente selezionato non è attivo",
+                    HttpStatus.CONFLICT);
+        }
+
+        return customer;
     }
 
     private Employee getEmployee(Integer id) throws ServiceException {
-        return employeeRepository.findById(id)
+
+        Employee employee = employeeRepository.findById(id)
                 .orElseThrow(() -> new ServiceException(
-                        "Dipendente non trovato con id: " + id));
+                        "Dipendente non trovato con id: " + id,
+                        HttpStatus.NOT_FOUND));
+
+        if (!employee.isActive()) {
+            throw new ServiceException(
+                    "Il dipendente selezionato non è attivo",
+                    HttpStatus.CONFLICT);
+        }
+
+        return employee;
     }
 
     /**
@@ -130,6 +160,7 @@ public class ConsultationService {
 
         return appointmentRepository.findById(id)
                 .orElseThrow(() -> new ServiceException(
-                        "Appuntamento non trovato con id: " + id));
+                        "Appuntamento non trovato con id: " + id,
+                        HttpStatus.NOT_FOUND));
     }
 }

@@ -4,6 +4,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import org.springframework.http.HttpStatus;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.generation.hairlab.dto.AppointmentItemDto;
 import com.generation.hairlab.mapper.AppointmentItemMapper;
@@ -42,16 +44,19 @@ public class AppointmentItemService {
     private final AppointmentItemMapper appointmentItemMapper;
 
     /** Restituisce tutti gli item. */
+    @Transactional(readOnly = true)
     public List<AppointmentItemDto> findAll() {
         return appointmentItemMapper.toDtoList(appointmentItemRepository.findAll());
     }
 
     /** Cerca un item tramite ID. */
+    @Transactional(readOnly = true)
     public AppointmentItemDto findById(Integer id) throws ServiceException {
         return appointmentItemMapper.toDto(getAppointmentItemById(id));
     }
 
     /** Restituisce gli item appartenenti a un appuntamento. */
+    @Transactional(readOnly = true)
     public List<AppointmentItemDto> findByAppointment(Integer appointmentId) {
         return appointmentItemMapper.toDtoList(
                 appointmentItemRepository
@@ -64,6 +69,7 @@ public class AppointmentItemService {
      * Recupera le Entity collegate, verifica che dipendente e servizio
      * siano attivi e controlla che l'operatore non abbia sovrapposizioni.
      */
+    @Transactional
     public AppointmentItemDto insert(AppointmentItemDto dto)
             throws ServiceException {
 
@@ -88,6 +94,7 @@ public class AppointmentItemService {
     }
 
     /** Aggiorna un AppointmentItem esistente. */
+    @Transactional
     public AppointmentItemDto update(Integer id, AppointmentItemDto dto)
             throws ServiceException {
 
@@ -117,17 +124,20 @@ public class AppointmentItemService {
     }
 
     /** Elimina un AppointmentItem tramite ID. */
+    @Transactional
     public void delete(Integer id) throws ServiceException {
         appointmentItemRepository.delete(getAppointmentItemById(id));
     }
 
     /** Restituisce la Entity AppointmentItem tramite ID. */
+    @Transactional(readOnly = true)
     public AppointmentItem getAppointmentItemById(Integer id)
             throws ServiceException {
 
         return appointmentItemRepository.findById(id)
                 .orElseThrow(() -> new ServiceException(
-                        "AppointmentItem non trovato con id: " + id));
+                        "AppointmentItem non trovato con id: " + id,
+                        HttpStatus.NOT_FOUND));
     }
 
     /**
@@ -178,7 +188,8 @@ public class AppointmentItemService {
 
             if (overlap) {
                 throw new ServiceException(
-                        "Il dipendente è già occupato nell'orario richiesto");
+                        "Il dipendente è già occupato nell'orario richiesto",
+                        HttpStatus.CONFLICT);
             }
         }
     }
@@ -193,17 +204,21 @@ public class AppointmentItemService {
     private Appointment getAppointment(Integer id) throws ServiceException {
         return appointmentRepository.findById(id)
                 .orElseThrow(() -> new ServiceException(
-                        "Appuntamento non trovato con id: " + id));
+                        "Appuntamento non trovato con id: " + id,
+                        HttpStatus.NOT_FOUND));
     }
 
     private SalonProduct getSalonProduct(Integer id) throws ServiceException {
 
         SalonProduct product = salonProductRepository.findById(id)
                 .orElseThrow(() -> new ServiceException(
-                        "Servizio non trovato con id: " + id));
+                        "Servizio non trovato con id: " + id,
+                        HttpStatus.NOT_FOUND));
 
         if (!product.isActive()) {
-            throw new ServiceException("Il servizio selezionato non è attivo");
+            throw new ServiceException(
+                    "Il servizio selezionato non è attivo",
+                    HttpStatus.CONFLICT);
         }
 
         return product;
@@ -213,10 +228,13 @@ public class AppointmentItemService {
 
         Employee employee = employeeRepository.findById(id)
                 .orElseThrow(() -> new ServiceException(
-                        "Dipendente non trovato con id: " + id));
+                        "Dipendente non trovato con id: " + id,
+                        HttpStatus.NOT_FOUND));
 
         if (!employee.isActive()) {
-            throw new ServiceException("Il dipendente selezionato non è attivo");
+            throw new ServiceException(
+                    "Il dipendente selezionato non è attivo",
+                    HttpStatus.CONFLICT);
         }
 
         return employee;

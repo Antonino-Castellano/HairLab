@@ -1,12 +1,13 @@
 package com.generation.hairlab.controller;
 
+import java.util.List;
 import java.util.Map;
 
-
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -18,79 +19,61 @@ import com.generation.hairlab.dto.HairDyeDto;
 import com.generation.hairlab.service.HairDyeService;
 import com.generation.hairlab.service.ServiceException;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
-/**
- * Controller REST dedicato alle tinte e ai prodotti tecnici colore.
- */
+/** Controller REST dedicato ai prodotti colore. */
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/hairlab/api/hair-dye")
-@CrossOrigin(origins = "http://localhost:4200")
 public class HairDyeController {
 
-    /** Service dedicato agli HairDye. */
-   
     private final HairDyeService hairDyeService;
 
-    /** Restituisce tutti i prodotti tecnici colore. */
     @GetMapping
-    public ResponseEntity<?> findAll() {
+    public ResponseEntity<List<HairDyeDto>> findAll() {
         return ResponseEntity.ok(hairDyeService.findAll());
     }
 
-    /** Restituisce solamente i prodotti attivi. */
     @GetMapping("/active")
-    public ResponseEntity<?> findActive() {
+    public ResponseEntity<List<HairDyeDto>> findActive() {
         return ResponseEntity.ok(hairDyeService.findActive());
     }
 
-    /** Cerca un HairDye tramite ID. */
     @GetMapping("/{id}")
-    public ResponseEntity<?> findById(@PathVariable Integer id) {
-        try {
-            return ResponseEntity.ok(hairDyeService.findById(id));
-        } catch (ServiceException e) {
-            return ResponseEntity.badRequest()
-                    .body(e.toMap("Ricerca prodotto colore fallita"));
-        }
+    public ResponseEntity<HairDyeDto> findById(
+            @PathVariable Integer id) throws ServiceException {
+        return ResponseEntity.ok(hairDyeService.findById(id));
     }
 
-    /** Inserisce un nuovo HairDye. */
     @PostMapping
-    public ResponseEntity<?> insert(@RequestBody HairDyeDto dto) {
-        try {
-            return ResponseEntity.ok(hairDyeService.insert(dto));
-        } catch (ServiceException e) {
-            return ResponseEntity.badRequest()
-                    .body(e.toMap("Inserimento prodotto colore fallito"));
-        }
+    public ResponseEntity<HairDyeDto> insert(
+            @Valid @RequestBody HairDyeDto dto) throws ServiceException {
+        return ResponseEntity.status(HttpStatus.CREATED)
+            .body(hairDyeService.insert(dto));
     }
 
-    /** Aggiorna un HairDye esistente. */
     @PutMapping("/{id}")
-    public ResponseEntity<?> update(
+    public ResponseEntity<HairDyeDto> update(
             @PathVariable Integer id,
-            @RequestBody HairDyeDto dto) {
-
-        try {
-            return ResponseEntity.ok(hairDyeService.update(id, dto));
-        } catch (ServiceException e) {
-            return ResponseEntity.badRequest()
-                    .body(e.toMap("Aggiornamento prodotto colore fallito"));
-        }
+            @Valid @RequestBody HairDyeDto dto) throws ServiceException {
+        return ResponseEntity.ok(hairDyeService.update(id, dto));
     }
 
-    /** Elimina un HairDye tramite ID. */
+    /** Disattiva logicamente il prodotto colore. */
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> delete(@PathVariable Integer id) {
-        try {
-            hairDyeService.delete(id);
-            return ResponseEntity.ok(
-                    Map.of("message", "Prodotto colore eliminato correttamente"));
-        } catch (ServiceException e) {
-            return ResponseEntity.badRequest()
-                    .body(e.toMap("Eliminazione prodotto colore fallita"));
-        }
+    public ResponseEntity<Map<String, String>> delete(
+            @PathVariable Integer id) throws ServiceException {
+        hairDyeService.delete(id);
+        return ResponseEntity.ok(
+            Map.of("message", "Prodotto colore disattivato correttamente")
+        );
+    }
+
+    /** Riattiva un prodotto colore disattivato. */
+    @PatchMapping("/{id}/activate")
+    public ResponseEntity<HairDyeDto> activate(
+            @PathVariable Integer id) throws ServiceException {
+        return ResponseEntity.ok(hairDyeService.activate(id));
     }
 }

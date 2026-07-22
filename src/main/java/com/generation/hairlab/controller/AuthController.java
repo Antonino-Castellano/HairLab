@@ -1,12 +1,12 @@
 package com.generation.hairlab.controller;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -20,64 +20,52 @@ import com.generation.hairlab.dto.LoginResponseDto;
 import com.generation.hairlab.service.ServiceException;
 import com.generation.hairlab.service.UserService;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
+/** Controller REST dedicato all'autenticazione HairLab. */
 @RestController
 @RequestMapping("/hairlab/api/auth")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:4200")   
 public class AuthController {
-
-    // dichiaro la dipendenza come interfaccia ma mi darÃ  UserServiceImpl
 
     private final UserService userService;
 
     @GetMapping("/isalive")
-    public Map<String,String> getInfo(){
-        Map<String,String> res = new HashMap<String,String>();
-        
-        res.put("name", "jd");
-        res.put("time", LocalDateTime.now().toString());
-
-        return res;
-
+    public ResponseEntity<Map<String, String>> getInfo() {
+        return ResponseEntity.ok(
+                Map.of(
+                        "name", "hairlab",
+                        "time", LocalDateTime.now().toString()));
     }
 
     @PatchMapping("/changepassword")
-    public ResponseEntity<?> changePassword(@RequestBody ChangePasswordDto dto){
-        try{
-            userService.changePassword(dto.getPassword());
-            return ResponseEntity.status(200).build();
-        }
-        catch(ServiceException e){
-            return ResponseEntity.status(400).body(e.toMap("Change password failed"));
-        }
+    public ResponseEntity<Void> changePassword(
+            @Valid @RequestBody ChangePasswordDto dto) throws ServiceException {
+        userService.changePassword(dto.getPassword());
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequestDto dto){
-        try{
-            LoginResponseDto res = userService.login(dto);
-            return ResponseEntity.ok(res);
-        }
-        catch(ServiceException e){
-            return ResponseEntity.status(403).body(e.toMap("Bad login"));
-        }
-
+    public ResponseEntity<LoginResponseDto> login(
+            @Valid @RequestBody LoginRequestDto dto) throws ServiceException {
+        return ResponseEntity.ok(userService.login(dto));
     }
 
     @GetMapping("/whoami")
-    public Map<String,String> isLogged(){
+    public ResponseEntity<Map<String, Object>> whoAmI(
+            Authentication authentication) {
 
-        String currentUsername = SecurityContextHolder.getContext()
-                                                      .getAuthentication()
-                                                      .getName();
+        List<String> roles = authentication
+                .getAuthorities()
+                .stream()
+                .map(authority -> authority.getAuthority())
+                .toList();
 
-        Map<String,String> res = new HashMap<String,String>();
-
-
-        return res;
-
-
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(
+                        Map.of(
+                                "email", authentication.getName(),
+                                "roles", roles));
     }
 }

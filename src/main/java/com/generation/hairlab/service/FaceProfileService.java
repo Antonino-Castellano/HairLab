@@ -4,6 +4,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import org.springframework.http.HttpStatus;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.generation.hairlab.dto.FaceProfileDto;
 import com.generation.hairlab.mapper.FaceProfileMapper;
@@ -32,6 +34,7 @@ public class FaceProfileService {
     /**
      * Recupera tutti i profili.
      */
+    @Transactional(readOnly = true)
     public List<FaceProfileDto> findAll() {
 
         return faceProfileMapper.toDtoList(
@@ -42,6 +45,7 @@ public class FaceProfileService {
     /**
      * Recupera un profilo tramite ID.
      */
+    @Transactional(readOnly = true)
     public FaceProfileDto findById(
             Integer id)
             throws ServiceException {
@@ -55,6 +59,7 @@ public class FaceProfileService {
      * Recupera il profilo associato
      * a una specifica cliente.
      */
+    @Transactional(readOnly = true)
     public FaceProfileDto findByCustomerId(
             Integer customerId)
             throws ServiceException {
@@ -67,7 +72,8 @@ public class FaceProfileService {
                 .orElseThrow(
                     () ->
                         new ServiceException(
-                            "Face profile not found"
+                            "Face profile not found",
+                            HttpStatus.NOT_FOUND
                         )
                 );
 
@@ -79,6 +85,7 @@ public class FaceProfileService {
     /**
      * Crea un nuovo profilo.
      */
+    @Transactional
     public FaceProfileDto insert(
             FaceProfileDto dto)
             throws ServiceException {
@@ -100,7 +107,8 @@ public class FaceProfileService {
         ) {
 
             throw new ServiceException(
-                "Customer already has a face profile"
+                "Customer already has a face profile",
+                HttpStatus.CONFLICT
             );
         }
 
@@ -114,11 +122,22 @@ public class FaceProfileService {
                 dto
             );
 
-        profile.setCustomer(
+        var customer =
             customerService
                 .getCustomerById(
                     dto.getCustomerId()
-                )
+                );
+
+        if (!customer.isActive()) {
+
+            throw new ServiceException(
+                "Customer is not active",
+                HttpStatus.CONFLICT
+            );
+        }
+
+        profile.setCustomer(
+            customer
         );
 
         LocalDateTime now =
@@ -142,6 +161,7 @@ public class FaceProfileService {
     /**
      * Aggiorna un profilo esistente.
      */
+    @Transactional
     public FaceProfileDto update(
             Integer id,
             FaceProfileDto dto)
@@ -321,6 +341,7 @@ public class FaceProfileService {
     /**
      * Elimina il profilo.
      */
+    @Transactional
     public void delete(
             Integer id)
             throws ServiceException {
@@ -333,6 +354,7 @@ public class FaceProfileService {
     /**
      * Recupera internamente l'Entity.
      */
+    @Transactional(readOnly = true)
     public FaceProfile getFaceProfileById(
             Integer id)
             throws ServiceException {
@@ -342,7 +364,8 @@ public class FaceProfileService {
             .orElseThrow(
                 () ->
                     new ServiceException(
-                        "Face profile not found"
+                        "Face profile not found",
+                        HttpStatus.NOT_FOUND
                     )
             );
     }

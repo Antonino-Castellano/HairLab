@@ -4,6 +4,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import org.springframework.http.HttpStatus;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.generation.hairlab.dto.AppointmentDto;
 import com.generation.hairlab.enums.AppointmentStatus;
@@ -34,27 +36,32 @@ public class AppointmentService {
     private final AppointmentMapper appointmentMapper;
 
     /** Restituisce tutti gli appuntamenti. */
+    @Transactional(readOnly = true)
     public List<AppointmentDto> findAll() {
         return appointmentMapper.toDtoList(appointmentRepository.findAll());
     }
 
     /** Cerca un appuntamento tramite ID. */
+    @Transactional(readOnly = true)
     public AppointmentDto findById(Integer id) throws ServiceException {
         return appointmentMapper.toDto(getAppointmentById(id));
     }
 
     /** Restituisce lo storico degli appuntamenti di un cliente. */
+    @Transactional(readOnly = true)
     public List<AppointmentDto> findByCustomer(Integer customerId) {
         return appointmentMapper.toDtoList(
                 appointmentRepository.findByCustomer_IdOrderByStartDateTimeDesc(customerId));
     }
 
     /** Restituisce gli appuntamenti con uno specifico stato. */
+    @Transactional(readOnly = true)
     public List<AppointmentDto> findByStatus(AppointmentStatus status) {
         return appointmentMapper.toDtoList(appointmentRepository.findByStatus(status));
     }
 
     /** Restituisce gli appuntamenti compresi in un intervallo temporale. */
+    @Transactional(readOnly = true)
     public List<AppointmentDto> findBetween(
             LocalDateTime start,
             LocalDateTime end) {
@@ -70,6 +77,7 @@ public class AppointmentService {
      * Il Customer viene recuperato tramite customerId e i timestamp
      * vengono gestiti dal backend.
      */
+    @Transactional
     public AppointmentDto insert(AppointmentDto dto) throws ServiceException {
 
         Customer customer = getCustomer(dto.getCustomerId());
@@ -84,6 +92,7 @@ public class AppointmentService {
     }
 
     /** Aggiorna un appuntamento esistente. */
+    @Transactional
     public AppointmentDto update(Integer id, AppointmentDto dto)
             throws ServiceException {
 
@@ -100,15 +109,18 @@ public class AppointmentService {
     }
 
     /** Elimina un appuntamento esistente. */
+    @Transactional
     public void delete(Integer id) throws ServiceException {
         appointmentRepository.delete(getAppointmentById(id));
     }
 
     /** Restituisce la Entity Appointment tramite ID. */
+    @Transactional(readOnly = true)
     public Appointment getAppointmentById(Integer id) throws ServiceException {
         return appointmentRepository.findById(id)
                 .orElseThrow(() -> new ServiceException(
-                        "Appuntamento non trovato con id: " + id));
+                        "Appuntamento non trovato con id: " + id,
+                        HttpStatus.NOT_FOUND));
     }
 
     /** Recupera il Customer necessario alla relazione. */
@@ -116,11 +128,13 @@ public class AppointmentService {
 
         Customer customer = customerRepository.findById(customerId)
                 .orElseThrow(() -> new ServiceException(
-                        "Cliente non trovato con id: " + customerId));
+                        "Cliente non trovato con id: " + customerId,
+                        HttpStatus.NOT_FOUND));
 
         if (!customer.isActive()) {
             throw new ServiceException(
-                    "Non è possibile creare/modificare un appuntamento per un cliente non attivo");
+                    "Non è possibile creare/modificare un appuntamento per un cliente non attivo",
+                    HttpStatus.CONFLICT);
         }
 
         return customer;

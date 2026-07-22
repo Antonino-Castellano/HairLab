@@ -8,65 +8,41 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import com.generation.hairlab.model.Customer;
 
 /**
- * Repository dedicato alla persistenza e alla ricerca delle Entity Customer.
+ * Repository JPA dedicato ai clienti HairLab.
  *
- * Estende JpaRepository per ottenere automaticamente le operazioni CRUD
- * principali, tra cui:
+ * Oltre alle ricerche per email,
+ * espone query specifiche per stato:
  *
- * - save(...)
- * - findById(...)
- * - findAll()
- * - deleteById(...)
- * - existsById(...)
- *
- * I metodi aggiuntivi sfruttano le query derivate di Spring Data JPA:
- * Spring costruisce automaticamente la query leggendo il nome del metodo.
+ * - clienti attivi;
+ * - clienti disattivati.
  */
-public interface CustomerRepository extends JpaRepository<Customer, Integer> {
+public interface CustomerRepository
+        extends JpaRepository<Customer, Integer> {
 
     /**
-     * Cerca un cliente tramite il suo indirizzo email.
-     *
-     * L'email è univoca nella Entity Customer, quindi il risultato può
-     * contenere al massimo un cliente.
-     *
-     * @param email indirizzo email da cercare
-     * @return Optional contenente il cliente se presente
+     * Cerca un cliente tramite email.
      */
-    Optional<Customer> findByEmail(String email);
+    Optional<Customer> findByEmail(
+        String email
+    );
 
     /**
-     * Cerca i clienti tramite una parte del nome o del cognome,
-     * ignorando differenze tra maiuscole e minuscole.
-     *
-     * Lo stesso valore di ricerca può essere passato a entrambi i parametri.
-     *
-     * @param firstName parte del nome da cercare
-     * @param lastName parte del cognome da cercare
-     * @return lista dei clienti corrispondenti
+     * Verifica se esiste già un cliente
+     * con una determinata email.
      */
-    List<Customer> findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(
-            String firstName,
-            String lastName);
+    boolean existsByEmail(
+        String email
+    );
 
     /**
-     * Restituisce tutti i clienti attivi.
-     *
-     * È utile per mostrare soltanto i clienti utilizzabili nelle nuove
-     * prenotazioni senza cancellare lo storico dei clienti disattivati.
-     *
-     * @return lista dei clienti attivi
+     * Restituisce solamente
+     * i clienti attivi.
      */
     List<Customer> findByActiveTrue();
 
     /**
-     * Verifica se esiste già un cliente con la stessa email.
-     *
-     * Può essere utilizzato dal Service prima di creare un nuovo cliente
-     * per gestire in modo chiaro il vincolo unique presente nel database.
-     *
-     * @param email email da verificare
-     * @return true se l'email è già presente
+     * Restituisce solamente
+     * i clienti disattivati.
      */
-    boolean existsByEmail(String email);
+    List<Customer> findByActiveFalse();
 }

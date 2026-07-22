@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.stereotype.Service;
+import org.springframework.http.HttpStatus;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.generation.hairlab.dto.ColorAnalysisDto;
 import com.generation.hairlab.enums.ColorAnalysisEnums.ColorSeason;
@@ -37,6 +39,7 @@ public class ColorAnalysisService {
     /**
      * Recupera tutte le analisi.
      */
+    @Transactional(readOnly = true)
     public List<ColorAnalysisDto> findAll() {
 
         return colorAnalysisMapper.toDtoList(
@@ -47,6 +50,7 @@ public class ColorAnalysisService {
     /**
      * Recupera tramite ID.
      */
+    @Transactional(readOnly = true)
     public ColorAnalysisDto findById(
             Integer id)
             throws ServiceException {
@@ -59,6 +63,7 @@ public class ColorAnalysisService {
     /**
      * Recupera l'analisi di una cliente.
      */
+    @Transactional(readOnly = true)
     public ColorAnalysisDto findByCustomerId(
             Integer customerId)
             throws ServiceException {
@@ -71,7 +76,8 @@ public class ColorAnalysisService {
                 .orElseThrow(
                     () ->
                         new ServiceException(
-                            "Color analysis not found"
+                            "Color analysis not found",
+                            HttpStatus.NOT_FOUND
                         )
                 );
 
@@ -83,6 +89,7 @@ public class ColorAnalysisService {
     /**
      * Inserisce una nuova analisi.
      */
+    @Transactional
     public ColorAnalysisDto insert(
             ColorAnalysisDto dto)
             throws ServiceException {
@@ -104,7 +111,8 @@ public class ColorAnalysisService {
         ) {
 
             throw new ServiceException(
-                "Customer already has a color analysis"
+                "Customer already has a color analysis",
+                HttpStatus.CONFLICT
             );
         }
 
@@ -117,11 +125,22 @@ public class ColorAnalysisService {
                 dto
             );
 
-        analysis.setCustomer(
+        var customer =
             customerService
                 .getCustomerById(
                     dto.getCustomerId()
-                )
+                );
+
+        if (!customer.isActive()) {
+
+            throw new ServiceException(
+                "Customer is not active",
+                HttpStatus.CONFLICT
+            );
+        }
+
+        analysis.setCustomer(
+            customer
         );
 
         analysis.setSkinReferenceColor(
@@ -171,6 +190,7 @@ public class ColorAnalysisService {
     /**
      * Aggiorna un'analisi.
      */
+    @Transactional
     public ColorAnalysisDto update(
             Integer id,
             ColorAnalysisDto dto)
@@ -272,6 +292,7 @@ public class ColorAnalysisService {
     /**
      * Elimina un'analisi.
      */
+    @Transactional
     public void delete(
             Integer id)
             throws ServiceException {
@@ -286,6 +307,7 @@ public class ColorAnalysisService {
     /**
      * Recupera internamente l'Entity.
      */
+    @Transactional(readOnly = true)
     public ColorAnalysis getColorAnalysisById(
             Integer id)
             throws ServiceException {
@@ -295,7 +317,8 @@ public class ColorAnalysisService {
             .orElseThrow(
                 () ->
                     new ServiceException(
-                        "Color analysis not found"
+                        "Color analysis not found",
+                        HttpStatus.NOT_FOUND
                     )
             );
     }

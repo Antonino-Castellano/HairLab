@@ -4,95 +4,167 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Past;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
+
 import lombok.Data;
 
 /**
- * DTO utilizzato per trasferire i dati relativi a un cliente
- * tra backend e frontend.
+ * DTO utilizzato per trasferire
+ * i dati di un cliente HairLab.
  *
- * Il DTO separa i dati esposti tramite API
- * dalle Entity JPA utilizzate per la persistenza.
- *
- * La relazione con gli appuntamenti viene rappresentata
- * tramite una lista di identificativi evitando riferimenti
- * circolari del tipo:
- *
- * Customer -> Appointment -> Customer.
+ * Le annotazioni Bean Validation
+ * proteggono le API anche quando vengono
+ * chiamate direttamente tramite Postman
+ * o altri client esterni.
  */
 @Data
 public class CustomerDto {
 
     /**
-     * Identificativo univoco del cliente.
+     * Identificativo generato dal database.
      *
-     * Durante la creazione può essere null
-     * perché viene generato dal database.
+     * Durante l'inserimento può essere null.
      */
     private Integer id;
 
     /**
      * Nome del cliente.
      */
+    @NotBlank(
+        message = "Il nome è obbligatorio"
+    )
+    @Size(
+        min = 2,
+        max = 60,
+        message =
+            "Il nome deve contenere "
+            + "da 2 a 60 caratteri"
+    )
     private String firstName;
 
     /**
      * Cognome del cliente.
      */
+    @NotBlank(
+        message = "Il cognome è obbligatorio"
+    )
+    @Size(
+        min = 2,
+        max = 60,
+        message =
+            "Il cognome deve contenere "
+            + "da 2 a 60 caratteri"
+    )
     private String lastName;
 
     /**
-     * Numero di telefono del cliente.
+     * Numero di telefono.
+     *
+     * Sono ammessi:
+     *
+     * - cifre;
+     * - spazi;
+     * - simbolo +;
+     * - parentesi;
+     * - trattini.
      */
+    @NotBlank(
+        message =
+            "Il numero di telefono è obbligatorio"
+    )
+    @Size(
+        min = 6,
+        max = 25,
+        message =
+            "Il numero di telefono deve contenere "
+            + "da 6 a 25 caratteri"
+    )
+    @Pattern(
+        regexp = "^[0-9+()\\-\\s]+$",
+        message =
+            "Il numero di telefono "
+            + "contiene caratteri non validi"
+    )
     private String phoneNumber;
 
     /**
-     * Indirizzo email del cliente.
+     * Email del cliente.
      */
+    @NotBlank(
+        message = "L'email è obbligatoria"
+    )
+    @Email(
+        message = "L'email non è valida"
+    )
+    @Size(
+        max = 120,
+        message =
+            "L'email non può superare "
+            + "120 caratteri"
+    )
     private String email;
 
     /**
-     * Data di nascita del cliente.
+     * Data di nascita.
+     *
+     * Deve essere una data passata.
      */
+    @NotNull(
+        message =
+            "La data di nascita è obbligatoria"
+    )
+    @Past(
+        message =
+            "La data di nascita deve essere "
+            + "precedente alla data odierna"
+    )
     private LocalDate dob;
 
     /**
-     * Indica se il cliente è attivo nel gestionale.
+     * Stato del cliente.
      *
-     * Un cliente disattivato rimane comunque
-     * presente nello storico.
+     * Non utilizziamo Boolean perché
+     * il frontend invia sempre true o false.
      */
     private boolean active;
 
     /**
-     * Foto profilo del cliente.
+     * Foto del cliente in formato:
      *
-     * Il frontend invia e riceve una stringa Base64.
+     * - data URL Base64;
+     * - percorso statico;
+     * - null.
      *
-     * Esempio:
-     *
-     * data:image/jpeg;base64,/9j/4AAQ...
-     *
-     * Se il cliente non possiede una foto,
-     * il campo può essere null.
+     * Impostiamo un limite prudenziale.
      */
+    @Size(
+        max = 2_000_000,
+        message =
+            "L'immagine del profilo è troppo grande"
+    )
     private String profileImage;
 
     /**
-     * Data e ora di creazione dell'anagrafica.
+     * Data di creazione gestita dal backend.
      */
     private LocalDateTime createdAt;
 
     /**
-     * Data e ora dell'ultima modifica.
+     * Data dell'ultima modifica
+     * gestita dal backend.
      */
     private LocalDateTime updatedAt;
 
     /**
-     * Identificativi degli appuntamenti
-     * associati al cliente.
+     * Identificativi degli appuntamenti.
      *
-     * Si utilizzano gli ID invece delle Entity
-     * per evitare strutture JSON ricorsive.
+     * Non vengono gestiti direttamente
+     * durante inserimento e modifica cliente.
      */
     private List<Integer> appointmentIds;
 }
