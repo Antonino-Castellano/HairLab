@@ -13,20 +13,24 @@ import com.generation.hairlab.repository.FaceProfileRepository;
 import lombok.RequiredArgsConstructor;
 
 /**
- * Service dedicato al profilo morfologico del viso.
+ * Service dedicato alla gestione
+ * dei profili morfologici del viso.
  */
 @Service
 @RequiredArgsConstructor
 public class FaceProfileService {
 
-    private final FaceProfileRepository faceProfileRepository;
+    private final FaceProfileRepository
+        faceProfileRepository;
 
-    private final FaceProfileMapper faceProfileMapper;
+    private final FaceProfileMapper
+        faceProfileMapper;
 
-    private final CustomerService customerService;
+    private final CustomerService
+        customerService;
 
     /**
-     * Restituisce tutti i profili.
+     * Recupera tutti i profili.
      */
     public List<FaceProfileDto> findAll() {
 
@@ -36,7 +40,7 @@ public class FaceProfileService {
     }
 
     /**
-     * Ricerca per ID del profilo.
+     * Recupera un profilo tramite ID.
      */
     public FaceProfileDto findById(
             Integer id)
@@ -48,212 +52,269 @@ public class FaceProfileService {
     }
 
     /**
-     * Ricerca il profilo appartenente
-     * a uno specifico cliente.
+     * Recupera il profilo associato
+     * a una specifica cliente.
      */
     public FaceProfileDto findByCustomerId(
             Integer customerId)
             throws ServiceException {
 
-        return faceProfileMapper.toDto(
+        FaceProfile profile =
             faceProfileRepository
-                .findByCustomerId(customerId)
-                .orElseThrow(
-                    () -> new ServiceException(
-                        "Profilo viso non trovato per il cliente: "
-                        + customerId
-                    )
+                .findByCustomerId(
+                    customerId
                 )
+                .orElseThrow(
+                    () ->
+                        new ServiceException(
+                            "Face profile not found"
+                        )
+                );
+
+        return faceProfileMapper.toDto(
+            profile
         );
     }
 
     /**
-     * Inserisce un nuovo FaceProfile.
+     * Crea un nuovo profilo.
      */
     public FaceProfileDto insert(
             FaceProfileDto dto)
             throws ServiceException {
 
-        if (dto.getCustomerId() == null) {
+        if (
+            dto.getCustomerId() == null
+        ) {
+
             throw new ServiceException(
-                "CustomerId obbligatorio"
+                "Customer id is required"
             );
         }
 
-        /**
-         * Un cliente può possedere
-         * solamente un FaceProfile.
-         */
         if (
             faceProfileRepository
                 .existsByCustomerId(
                     dto.getCustomerId()
                 )
         ) {
+
             throw new ServiceException(
-                "Il cliente possiede già un profilo del viso"
+                "Customer already has a face profile"
             );
         }
 
-        FaceProfile entity =
-            faceProfileMapper.toEntity(dto);
-
-        entity.setCustomer(
-            customerService.getCustomerById(
-                dto.getCustomerId()
-            )
+        validateReferenceColor(
+            dto.getEyeReferenceColor(),
+            "eye reference color"
         );
 
-        entity.setCreatedAt(
-            LocalDateTime.now()
+        FaceProfile profile =
+            faceProfileMapper.toEntity(
+                dto
+            );
+
+        profile.setCustomer(
+            customerService
+                .getCustomerById(
+                    dto.getCustomerId()
+                )
         );
 
-        entity.setUpdatedAt(
-            LocalDateTime.now()
+        LocalDateTime now =
+            LocalDateTime.now();
+
+        profile.setCreatedAt(
+            now
+        );
+
+        profile.setUpdatedAt(
+            now
         );
 
         return faceProfileMapper.toDto(
-            faceProfileRepository.save(entity)
+            faceProfileRepository.save(
+                profile
+            )
         );
     }
 
     /**
      * Aggiorna un profilo esistente.
-     *
-     * Seguiamo lo stesso stile di CustomerService:
-     * recuperiamo prima la Entity e aggiorniamo
-     * esplicitamente i campi.
      */
     public FaceProfileDto update(
             Integer id,
             FaceProfileDto dto)
             throws ServiceException {
 
-        FaceProfile entity =
+        FaceProfile profile =
             getFaceProfileById(id);
 
-        entity.setFaceShape(
+        validateReferenceColor(
+            dto.getEyeReferenceColor(),
+            "eye reference color"
+        );
+
+        /*
+         * FORMA GENERALE.
+         */
+        profile.setFaceShape(
             dto.getFaceShape()
         );
 
-        entity.setForeheadHeight(
+        /*
+         * FRONTE.
+         */
+        profile.setForeheadHeight(
             dto.getForeheadHeight()
         );
 
-        entity.setForeheadWidth(
+        profile.setForeheadWidth(
             dto.getForeheadWidth()
         );
 
-        entity.setHairlineShape(
+        profile.setHairlineShape(
             dto.getHairlineShape()
         );
 
-        entity.setEyeShape(
+        /*
+         * OCCHI.
+         */
+        profile.setEyeShape(
             dto.getEyeShape()
         );
 
-        entity.setEyeOrientation(
+        profile.setEyeOrientation(
             dto.getEyeOrientation()
         );
 
-        entity.setEyeSpacing(
+        profile.setEyeSpacing(
             dto.getEyeSpacing()
         );
 
-        entity.setEyeSize(
+        profile.setEyeSize(
             dto.getEyeSize()
         );
 
-        entity.setEyeColor(
+        profile.setEyeColor(
             dto.getEyeColor()
         );
 
-        entity.setEyeColorNotes(
+        profile.setEyeReferenceColor(
+            normalizeHex(
+                dto.getEyeReferenceColor()
+            )
+        );
+
+        profile.setEyeColorNotes(
             dto.getEyeColorNotes()
         );
 
-        entity.setEyebrowShape(
+        /*
+         * SOPRACCIGLIA.
+         */
+        profile.setEyebrowShape(
             dto.getEyebrowShape()
         );
 
-        entity.setEyebrowThickness(
+        profile.setEyebrowThickness(
             dto.getEyebrowThickness()
         );
 
-        entity.setNoseLength(
+        /*
+         * NASO.
+         */
+        profile.setNoseLength(
             dto.getNoseLength()
         );
 
-        entity.setNoseWidth(
+        profile.setNoseWidth(
             dto.getNoseWidth()
         );
 
-        entity.setNoseProfile(
+        profile.setNoseProfile(
             dto.getNoseProfile()
         );
 
-        entity.setNoseTip(
+        profile.setNoseTip(
             dto.getNoseTip()
         );
 
-        entity.setCheekboneWidth(
+        /*
+         * ZIGOMI.
+         */
+        profile.setCheekboneWidth(
             dto.getCheekboneWidth()
         );
 
-        entity.setCheekboneProminence(
+        profile.setCheekboneProminence(
             dto.getCheekboneProminence()
         );
 
-        entity.setJawWidth(
+        /*
+         * MASCELLA.
+         */
+        profile.setJawWidth(
             dto.getJawWidth()
         );
 
-        entity.setJawDefinition(
+        profile.setJawDefinition(
             dto.getJawDefinition()
         );
 
-        entity.setJawShape(
+        profile.setJawShape(
             dto.getJawShape()
         );
 
-        entity.setChinShape(
+        /*
+         * MENTO.
+         */
+        profile.setChinShape(
             dto.getChinShape()
         );
 
-        entity.setChinProjection(
+        profile.setChinProjection(
             dto.getChinProjection()
         );
 
-        entity.setMouthWidth(
+        /*
+         * BOCCA E LABBRA.
+         */
+        profile.setMouthWidth(
             dto.getMouthWidth()
         );
 
-        entity.setLipFullness(
+        profile.setLipFullness(
             dto.getLipFullness()
         );
 
-        entity.setLipBalance(
+        profile.setLipBalance(
             dto.getLipBalance()
         );
 
-        entity.setLipShape(
+        profile.setLipShape(
             dto.getLipShape()
         );
 
-        entity.setNotes(
+        /*
+         * NOTE.
+         */
+        profile.setNotes(
             dto.getNotes()
         );
 
-        entity.setStylingGoals(
+        profile.setStylingGoals(
             dto.getStylingGoals()
         );
 
-        entity.setUpdatedAt(
+        profile.setUpdatedAt(
             LocalDateTime.now()
         );
 
         return faceProfileMapper.toDto(
-            faceProfileRepository.save(entity)
+            faceProfileRepository.save(
+                profile
+            )
         );
     }
 
@@ -270,7 +331,7 @@ public class FaceProfileService {
     }
 
     /**
-     * Restituisce la Entity reale.
+     * Recupera internamente l'Entity.
      */
     public FaceProfile getFaceProfileById(
             Integer id)
@@ -279,10 +340,59 @@ public class FaceProfileService {
         return faceProfileRepository
             .findById(id)
             .orElseThrow(
-                () -> new ServiceException(
-                    "Profilo viso non trovato con id: "
-                    + id
-                )
+                () ->
+                    new ServiceException(
+                        "Face profile not found"
+                    )
             );
+    }
+
+    /**
+     * Valida un colore HEX.
+     *
+     * null e stringa vuota sono consentiti
+     * perché il riferimento è opzionale.
+     */
+    private void validateReferenceColor(
+            String value,
+            String fieldName)
+            throws ServiceException {
+
+        if (
+            value == null ||
+            value.isBlank()
+        ) {
+
+            return;
+        }
+
+        if (
+            !value.matches(
+                "^#[0-9A-Fa-f]{6}$"
+            )
+        ) {
+
+            throw new ServiceException(
+                fieldName +
+                " must use #RRGGBB format"
+            );
+        }
+    }
+
+    /**
+     * Uniforma i codici HEX.
+     */
+    private String normalizeHex(
+            String value) {
+
+        if (
+            value == null ||
+            value.isBlank()
+        ) {
+
+            return null;
+        }
+
+        return value.toUpperCase();
     }
 }

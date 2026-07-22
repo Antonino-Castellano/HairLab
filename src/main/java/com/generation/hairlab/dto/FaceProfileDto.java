@@ -27,57 +27,115 @@ import lombok.Data;
 
 /**
  * DTO del profilo morfologico del viso.
+ *
+ * La relazione con Customer viene rappresentata
+ * attraverso customerId.
  */
 @Data
 public class FaceProfileDto {
 
     private Integer id;
 
-    /**
-     * Nel DTO rappresentiamo Customer
-     * solamente attraverso il suo ID.
-     */
     private Integer customerId;
 
+    /*
+     * FORMA GENERALE.
+     */
     private FaceShape faceShape;
 
+    /*
+     * FRONTE.
+     */
     private Level foreheadHeight;
+
     private Width foreheadWidth;
+
     private HairlineShape hairlineShape;
 
+    /*
+     * OCCHI.
+     */
     private EyeShape eyeShape;
+
     private EyeOrientation eyeOrientation;
+
     private EyeSpacing eyeSpacing;
+
     private Size eyeSize;
+
     private EyeColor eyeColor;
+
+    /**
+     * Campione HEX reale utilizzato
+     * come riferimento visivo.
+     */
+    private String eyeReferenceColor;
+
     private String eyeColorNotes;
 
+    /*
+     * SOPRACCIGLIA.
+     */
     private EyebrowShape eyebrowShape;
+
     private Thickness eyebrowThickness;
 
+    /*
+     * NASO.
+     */
     private Length noseLength;
+
     private Width noseWidth;
+
     private NoseProfile noseProfile;
+
     private NoseTip noseTip;
 
+    /*
+     * ZIGOMI.
+     */
     private Width cheekboneWidth;
+
     private Level cheekboneProminence;
 
+    /*
+     * MASCELLA.
+     */
     private Width jawWidth;
+
     private Level jawDefinition;
+
     private JawShape jawShape;
 
+    /*
+     * MENTO.
+     */
     private ChinShape chinShape;
+
     private ChinProjection chinProjection;
 
+    /*
+     * BOCCA E LABBRA.
+     */
     private Width mouthWidth;
+
     private LipFullness lipFullness;
+
     private LipBalance lipBalance;
+
     private LipShape lipShape;
 
+    /*
+     * NOTE.
+     */
     private String notes;
+
     private String stylingGoals;
 
+    /*
+     * TIMESTAMP.
+     */
     private LocalDateTime createdAt;
+
     private LocalDateTime updatedAt;
 }

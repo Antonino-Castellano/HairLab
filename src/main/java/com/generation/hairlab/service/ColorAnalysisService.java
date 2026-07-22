@@ -18,18 +18,25 @@ import com.generation.hairlab.repository.ColorAnalysisRepository;
 import lombok.RequiredArgsConstructor;
 
 /**
- * Service dedicato all'analisi cromatica.
+ * Service dedicato alla gestione
+ * dell'analisi cromatica.
  */
 @Service
 @RequiredArgsConstructor
 public class ColorAnalysisService {
 
-    private final ColorAnalysisRepository colorAnalysisRepository;
+    private final ColorAnalysisRepository
+        colorAnalysisRepository;
 
-    private final ColorAnalysisMapper colorAnalysisMapper;
+    private final ColorAnalysisMapper
+        colorAnalysisMapper;
 
-    private final CustomerService customerService;
+    private final CustomerService
+        customerService;
 
+    /**
+     * Recupera tutte le analisi.
+     */
     public List<ColorAnalysisDto> findAll() {
 
         return colorAnalysisMapper.toDtoList(
@@ -37,6 +44,9 @@ public class ColorAnalysisService {
         );
     }
 
+    /**
+     * Recupera tramite ID.
+     */
     public ColorAnalysisDto findById(
             Integer id)
             throws ServiceException {
@@ -46,29 +56,43 @@ public class ColorAnalysisService {
         );
     }
 
+    /**
+     * Recupera l'analisi di una cliente.
+     */
     public ColorAnalysisDto findByCustomerId(
             Integer customerId)
             throws ServiceException {
 
-        return colorAnalysisMapper.toDto(
+        ColorAnalysis analysis =
             colorAnalysisRepository
-                .findByCustomerId(customerId)
-                .orElseThrow(
-                    () -> new ServiceException(
-                        "Analisi cromatica non trovata per il cliente: "
-                        + customerId
-                    )
+                .findByCustomerId(
+                    customerId
                 )
+                .orElseThrow(
+                    () ->
+                        new ServiceException(
+                            "Color analysis not found"
+                        )
+                );
+
+        return colorAnalysisMapper.toDto(
+            analysis
         );
     }
 
+    /**
+     * Inserisce una nuova analisi.
+     */
     public ColorAnalysisDto insert(
             ColorAnalysisDto dto)
             throws ServiceException {
 
-        if (dto.getCustomerId() == null) {
+        if (
+            dto.getCustomerId() == null
+        ) {
+
             throw new ServiceException(
-                "CustomerId obbligatorio"
+                "Customer id is required"
             );
         }
 
@@ -78,50 +102,47 @@ public class ColorAnalysisService {
                     dto.getCustomerId()
                 )
         ) {
+
             throw new ServiceException(
-                "Il cliente possiede già un'analisi cromatica"
+                "Customer already has a color analysis"
             );
         }
 
-        validateSeason(
-            dto.getSeason(),
-            dto.getSubSeason()
+        validateAnalysis(
+            dto
         );
 
-        validateColors(
-            dto.getBestColors()
+        ColorAnalysis analysis =
+            colorAnalysisMapper.toEntity(
+                dto
+            );
+
+        analysis.setCustomer(
+            customerService
+                .getCustomerById(
+                    dto.getCustomerId()
+                )
         );
 
-        validateColors(
-            dto.getAvoidColors()
-        );
-
-        ColorAnalysis entity =
-            colorAnalysisMapper.toEntity(dto);
-
-        entity.setCustomer(
-            customerService.getCustomerById(
-                dto.getCustomerId()
+        analysis.setSkinReferenceColor(
+            normalizeHex(
+                dto.getSkinReferenceColor()
             )
         );
 
-        entity.setBestColors(
-            dto.getBestColors() == null
-                ? new HashMap<>()
-                : new HashMap<>(
-                    dto.getBestColors()
-                )
+        analysis.setBestColors(
+            copyColors(
+                dto.getBestColors()
+            )
         );
 
-        entity.setAvoidColors(
-            dto.getAvoidColors() == null
-                ? new HashMap<>()
-                : new HashMap<>(
-                    dto.getAvoidColors()
-                )
+        analysis.setAvoidColors(
+            copyColors(
+                dto.getAvoidColors()
+            )
         );
 
-        entity.setBestMetals(
+        analysis.setBestMetals(
             dto.getBestMetals() == null
                 ? new HashSet<>()
                 : new HashSet<>(
@@ -129,85 +150,100 @@ public class ColorAnalysisService {
                 )
         );
 
-        entity.setCreatedAt(
-            LocalDateTime.now()
+        LocalDateTime now =
+            LocalDateTime.now();
+
+        analysis.setCreatedAt(
+            now
         );
 
-        entity.setUpdatedAt(
-            LocalDateTime.now()
+        analysis.setUpdatedAt(
+            now
         );
 
         return colorAnalysisMapper.toDto(
-            colorAnalysisRepository.save(entity)
+            colorAnalysisRepository.save(
+                analysis
+            )
         );
     }
 
+    /**
+     * Aggiorna un'analisi.
+     */
     public ColorAnalysisDto update(
             Integer id,
             ColorAnalysisDto dto)
             throws ServiceException {
 
-        ColorAnalysis entity =
-            getColorAnalysisById(id);
+        ColorAnalysis analysis =
+            getColorAnalysisById(
+                id
+            );
 
-        validateSeason(
-            dto.getSeason(),
-            dto.getSubSeason()
+        validateAnalysis(
+            dto
         );
 
-        validateColors(
-            dto.getBestColors()
-        );
-
-        validateColors(
-            dto.getAvoidColors()
-        );
-
-        entity.setSkinTone(
+        /*
+         * PELLE.
+         */
+        analysis.setSkinTone(
             dto.getSkinTone()
         );
 
-        entity.setUndertone(
+        analysis.setSkinReferenceColor(
+            normalizeHex(
+                dto.getSkinReferenceColor()
+            )
+        );
+
+        analysis.setUndertone(
             dto.getUndertone()
         );
 
-        entity.setSeason(
+        /*
+         * STAGIONE.
+         */
+        analysis.setSeason(
             dto.getSeason()
         );
 
-        entity.setSubSeason(
+        analysis.setSubSeason(
             dto.getSubSeason()
         );
 
-        entity.setColorValue(
+        /*
+         * PARAMETRI.
+         */
+        analysis.setColorValue(
             dto.getColorValue()
         );
 
-        entity.setContrastLevel(
+        analysis.setContrastLevel(
             dto.getContrastLevel()
         );
 
-        entity.setChroma(
+        analysis.setChroma(
             dto.getChroma()
         );
 
-        entity.setBestColors(
-            dto.getBestColors() == null
-                ? new HashMap<>()
-                : new HashMap<>(
-                    dto.getBestColors()
-                )
+        /*
+         * PALETTE.
+         */
+        analysis.setBestColors(
+            copyColors(
+                dto.getBestColors()
+            )
         );
 
-        entity.setAvoidColors(
-            dto.getAvoidColors() == null
-                ? new HashMap<>()
-                : new HashMap<>(
-                    dto.getAvoidColors()
-                )
+        analysis.setAvoidColors(
+            copyColors(
+                dto.getAvoidColors()
+            )
         );
 
-        entity.setBestMetals(
+        analysis.setBestMetals(
             dto.getBestMetals() == null
                 ? new HashSet<>()
                 : new HashSet<>(
@@ -215,28 +251,41 @@ public class ColorAnalysisService {
                 )
         );
 
-        entity.setNotes(
+        /*
+         * NOTE.
+         */
+        analysis.setNotes(
             dto.getNotes()
         );
 
-        entity.setUpdatedAt(
+        analysis.setUpdatedAt(
             LocalDateTime.now()
         );
 
         return colorAnalysisMapper.toDto(
-            colorAnalysisRepository.save(entity)
+            colorAnalysisRepository.save(
+                analysis
+            )
         );
     }
 
+    /**
+     * Elimina un'analisi.
+     */
     public void delete(
             Integer id)
             throws ServiceException {
 
         colorAnalysisRepository.delete(
-            getColorAnalysisById(id)
+            getColorAnalysisById(
+                id
+            )
         );
     }
 
+    /**
+     * Recupera internamente l'Entity.
+     */
     public ColorAnalysis getColorAnalysisById(
             Integer id)
             throws ServiceException {
@@ -244,100 +293,217 @@ public class ColorAnalysisService {
         return colorAnalysisRepository
             .findById(id)
             .orElseThrow(
-                () -> new ServiceException(
-                    "Analisi cromatica non trovata con id: "
-                    + id
-                )
+                () ->
+                    new ServiceException(
+                        "Color analysis not found"
+                    )
             );
     }
 
     /**
-     * Verifica che stagione e sottostagione
-     * siano coerenti.
+     * Esegue tutte le validazioni.
      */
-    private void validateSeason(
-            ColorSeason season,
-            ColorSubSeason subSeason)
+    private void validateAnalysis(
+            ColorAnalysisDto dto)
             throws ServiceException {
 
-        if (
-            season == null ||
-            subSeason == null
-        ) {
+        validateSeason(
+            dto
+        );
+
+        validateReferenceColor(
+            dto.getSkinReferenceColor(),
+            "skin reference color"
+        );
+
+        validateColors(
+            dto.getBestColors(),
+            "best colors"
+        );
+
+        validateColors(
+            dto.getAvoidColors(),
+            "avoid colors"
+        );
+    }
+
+    /**
+     * Controlla che la sottostagione
+     * appartenga alla macro stagione selezionata.
+     */
+    private void validateSeason(
+            ColorAnalysisDto dto)
+            throws ServiceException {
+
+        ColorSubSeason subSeason =
+            dto.getSubSeason();
+
+        if (subSeason == null) {
+
             return;
+        }
+
+        ColorSeason season =
+            dto.getSeason();
+
+        if (season == null) {
+
+            throw new ServiceException(
+                "Season is required when sub season is specified"
+            );
         }
 
         boolean valid =
             switch (season) {
 
                 case SPRING ->
-                    subSeason == ColorSubSeason.LIGHT_SPRING ||
-                    subSeason == ColorSubSeason.WARM_SPRING ||
-                    subSeason == ColorSubSeason.BRIGHT_SPRING;
+                    subSeason ==
+                        ColorSubSeason.LIGHT_SPRING ||
+                    subSeason ==
+                        ColorSubSeason.WARM_SPRING ||
+                    subSeason ==
+                        ColorSubSeason.BRIGHT_SPRING;
 
                 case SUMMER ->
-                    subSeason == ColorSubSeason.LIGHT_SUMMER ||
-                    subSeason == ColorSubSeason.COOL_SUMMER ||
-                    subSeason == ColorSubSeason.SOFT_SUMMER;
+                    subSeason ==
+                        ColorSubSeason.LIGHT_SUMMER ||
+                    subSeason ==
+                        ColorSubSeason.COOL_SUMMER ||
+                    subSeason ==
+                        ColorSubSeason.SOFT_SUMMER;
 
                 case AUTUMN ->
-                    subSeason == ColorSubSeason.SOFT_AUTUMN ||
-                    subSeason == ColorSubSeason.WARM_AUTUMN ||
-                    subSeason == ColorSubSeason.DEEP_AUTUMN;
+                    subSeason ==
+                        ColorSubSeason.SOFT_AUTUMN ||
+                    subSeason ==
+                        ColorSubSeason.WARM_AUTUMN ||
+                    subSeason ==
+                        ColorSubSeason.DEEP_AUTUMN;
 
                 case WINTER ->
-                    subSeason == ColorSubSeason.BRIGHT_WINTER ||
-                    subSeason == ColorSubSeason.COOL_WINTER ||
-                    subSeason == ColorSubSeason.DEEP_WINTER;
+                    subSeason ==
+                        ColorSubSeason.BRIGHT_WINTER ||
+                    subSeason ==
+                        ColorSubSeason.COOL_WINTER ||
+                    subSeason ==
+                        ColorSubSeason.DEEP_WINTER;
             };
 
         if (!valid) {
+
             throw new ServiceException(
-                "La sottostagione non è compatibile con la stagione selezionata"
+                "Sub season is not compatible with selected season"
             );
         }
     }
 
     /**
-     * Controlla che i colori abbiano
-     * un codice HEX valido.
+     * Controlla una palette nome -> HEX.
      */
     private void validateColors(
-            Map<String, String> colors)
+            Map<String, String> colors,
+            String fieldName)
             throws ServiceException {
 
         if (colors == null) {
+
             return;
         }
 
         for (
-            Map.Entry<String, String> entry :
-            colors.entrySet()
+            Map.Entry<String, String>
+                entry :
+                colors.entrySet()
         ) {
 
             if (
                 entry.getKey() == null ||
                 entry.getKey().isBlank()
             ) {
+
                 throw new ServiceException(
-                    "Il nome del colore non può essere vuoto"
+                    fieldName +
+                    " contains a color without name"
                 );
             }
 
-            String hex =
-                entry.getValue();
-
-            if (
-                hex == null ||
-                !hex.matches(
-                    "^#[0-9A-Fa-f]{6}$"
-                )
-            ) {
-                throw new ServiceException(
-                    "Codice colore HEX non valido per: "
-                    + entry.getKey()
-                );
-            }
+            validateReferenceColor(
+                entry.getValue(),
+                fieldName +
+                " / " +
+                entry.getKey()
+            );
         }
+    }
+
+    /**
+     * Valida formato #RRGGBB.
+     */
+    private void validateReferenceColor(
+            String value,
+            String fieldName)
+            throws ServiceException {
+
+        if (
+            value == null ||
+            value.isBlank()
+        ) {
+
+            return;
+        }
+
+        if (
+            !value.matches(
+                "^#[0-9A-Fa-f]{6}$"
+            )
+        ) {
+
+            throw new ServiceException(
+                fieldName +
+                " must use #RRGGBB format"
+            );
+        }
+    }
+
+    /**
+     * Copia e normalizza una palette.
+     */
+    private Map<String, String> copyColors(
+            Map<String, String> source) {
+
+        Map<String, String> result =
+            new HashMap<>();
+
+        if (source == null) {
+
+            return result;
+        }
+
+        source.forEach(
+            (name, hex) ->
+                result.put(
+                    name,
+                    normalizeHex(hex)
+                )
+        );
+
+        return result;
+    }
+
+    /**
+     * Uniforma HEX in maiuscolo.
+     */
+    private String normalizeHex(
+            String value) {
+
+        if (
+            value == null ||
+            value.isBlank()
+        ) {
+
+            return null;
+        }
+
+        return value.toUpperCase();
     }
 }

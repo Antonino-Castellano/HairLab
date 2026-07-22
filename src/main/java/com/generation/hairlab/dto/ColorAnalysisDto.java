@@ -16,7 +16,7 @@ import com.generation.hairlab.enums.ColorAnalysisEnums.Undertone;
 import lombok.Data;
 
 /**
- * DTO dell'analisi cromatica della cliente.
+ * DTO dell'analisi cromatica.
  */
 @Data
 public class ColorAnalysisDto {
@@ -25,30 +25,56 @@ public class ColorAnalysisDto {
 
     private Integer customerId;
 
+    /*
+     * PELLE.
+     */
     private SkinTone skinTone;
+
+    /**
+     * Campione HEX reale
+     * della pelle della cliente.
+     */
+    private String skinReferenceColor;
+
     private Undertone undertone;
 
+    /*
+     * STAGIONE.
+     */
     private ColorSeason season;
+
     private ColorSubSeason subSeason;
 
+    /*
+     * PARAMETRI.
+     */
     private ColorValue colorValue;
+
     private ContrastLevel contrastLevel;
+
     private Chroma chroma;
 
-    /**
-     * Nome colore -> codice HEX.
+    /*
+     * PALETTE.
      */
-    private Map<String, String> bestColors;
+    private Map<String, String>
+        bestColors;
 
-    /**
-     * Nome colore -> codice HEX.
+    private Map<String, String>
+        avoidColors;
+
+    private Set<MetalType>
+        bestMetals;
+
+    /*
+     * NOTE.
      */
-    private Map<String, String> avoidColors;
-
-    private Set<MetalType> bestMetals;
-
     private String notes;
 
+    /*
+     * TIMESTAMP.
+     */
     private LocalDateTime createdAt;
+
     private LocalDateTime updatedAt;
 }

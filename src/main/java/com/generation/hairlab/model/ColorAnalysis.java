@@ -29,19 +29,14 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.MapKeyColumn;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
 /**
- * Analisi cromatica e armocromatica della cliente.
- *
- * Non duplica informazioni già presenti in:
- *
- * - HairProfile per il colore naturale dei capelli;
- * - FaceProfile per il colore degli occhi.
- *
- * StyleRecommendationService combinerà tutti i profili.
+ * Analisi cromatica / armocromatica
+ * associata a una cliente.
  */
 @Entity
 @Table(name = "color_analysis")
@@ -49,13 +44,18 @@ import lombok.ToString;
 public class ColorAnalysis {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(
+        strategy = GenerationType.IDENTITY
+    )
     private Integer id;
 
     /**
      * Cliente proprietario dell'analisi.
      */
-    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @OneToOne(
+        fetch = FetchType.LAZY,
+        optional = false
+    )
     @JoinColumn(
         name = "customer_id",
         nullable = false,
@@ -71,15 +71,37 @@ public class ColorAnalysis {
      * ============================================================
      */
 
+    /**
+     * Classificazione generale
+     * della profondità della pelle.
+     */
     @Enumerated(EnumType.STRING)
     private SkinTone skinTone;
 
+    /**
+     * Colore HEX reale utilizzato
+     * come riferimento della pelle
+     * della cliente.
+     *
+     * Esempio:
+     *
+     * #C58A70
+     */
+    @Column(
+        name = "skin_reference_color",
+        length = 7
+    )
+    private String skinReferenceColor;
+
+    /**
+     * Temperatura / sottotono.
+     */
     @Enumerated(EnumType.STRING)
     private Undertone undertone;
 
     /*
      * ============================================================
-     * ARMOCROMIA
+     * STAGIONE
      * ============================================================
      */
 
@@ -89,45 +111,35 @@ public class ColorAnalysis {
     @Enumerated(EnumType.STRING)
     private ColorSubSeason subSeason;
 
-    /**
-     * Valore o profondità cromatica.
+    /*
+     * ============================================================
+     * PARAMETRI CROMATICI
+     * ============================================================
      */
+
     @Enumerated(EnumType.STRING)
     @Column(name = "color_value")
     private ColorValue colorValue;
 
-    /**
-     * Contrasto naturale.
-     */
     @Enumerated(EnumType.STRING)
     private ContrastLevel contrastLevel;
 
-    /**
-     * Intensità cromatica.
-     */
     @Enumerated(EnumType.STRING)
     private Chroma chroma;
 
     /*
      * ============================================================
-     * PALETTE CONSIGLIATA
+     * COLORI CONSIGLIATI
      * ============================================================
-     *
-     * Utilizziamo Map<String, String>:
-     *
-     * Nome colore -> HEX
-     *
-     * Esempio:
-     *
-     * "Borgogna" -> "#6D213C"
      */
 
     @ElementCollection
     @CollectionTable(
         name = "color_analysis_best_colors",
-        joinColumns = @JoinColumn(
-            name = "color_analysis_id"
-        )
+        joinColumns =
+            @JoinColumn(
+                name = "color_analysis_id"
+            )
     )
     @MapKeyColumn(
         name = "color_name",
@@ -137,18 +149,23 @@ public class ColorAnalysis {
         name = "hex_code",
         length = 7
     )
-    private Map<String, String> bestColors =
-        new HashMap<>();
+    private Map<String, String>
+        bestColors =
+            new HashMap<>();
 
-    /**
-     * Colori generalmente meno armonici.
+    /*
+     * ============================================================
+     * COLORI MENO ARMONICI
+     * ============================================================
      */
+
     @ElementCollection
     @CollectionTable(
         name = "color_analysis_avoid_colors",
-        joinColumns = @JoinColumn(
-            name = "color_analysis_id"
-        )
+        joinColumns =
+            @JoinColumn(
+                name = "color_analysis_id"
+            )
     )
     @MapKeyColumn(
         name = "color_name",
@@ -158,29 +175,44 @@ public class ColorAnalysis {
         name = "hex_code",
         length = 7
     )
-    private Map<String, String> avoidColors =
-        new HashMap<>();
+    private Map<String, String>
+        avoidColors =
+            new HashMap<>();
 
-    /**
-     * Metalli consigliati.
+    /*
+     * ============================================================
+     * METALLI
+     * ============================================================
      */
+
     @ElementCollection
     @CollectionTable(
         name = "color_analysis_metals",
-        joinColumns = @JoinColumn(
-            name = "color_analysis_id"
-        )
+        joinColumns =
+            @JoinColumn(
+                name = "color_analysis_id"
+            )
     )
     @Enumerated(EnumType.STRING)
     @Column(name = "metal_type")
-    private Set<MetalType> bestMetals =
-        new HashSet<>();
+    private Set<MetalType>
+        bestMetals =
+            new HashSet<>();
 
-    /**
-     * Note libere del professionista.
+    /*
+     * ============================================================
+     * NOTE
+     * ============================================================
      */
+
     @Column(length = 2000)
     private String notes;
+
+    /*
+     * ============================================================
+     * TIMESTAMP
+     * ============================================================
+     */
 
     @Column(nullable = false)
     private LocalDateTime createdAt;

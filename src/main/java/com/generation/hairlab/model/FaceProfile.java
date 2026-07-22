@@ -34,6 +34,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -41,12 +42,20 @@ import lombok.ToString;
 /**
  * Profilo morfologico del viso di una cliente.
  *
+ * Contiene le caratteristiche utili alla consulenza
+ * professionale di taglio e styling:
+ *
+ * - forma generale;
+ * - fronte;
+ * - occhi;
+ * - sopracciglia;
+ * - naso;
+ * - zigomi;
+ * - mascella;
+ * - mento;
+ * - bocca e labbra.
+ *
  * Ogni cliente può possedere un solo FaceProfile.
- *
- * La classe contiene caratteristiche descrittive utili
- * alla consulenza estetica e hairstyling.
- *
- * Non rappresenta una diagnosi medica.
  */
 @Entity
 @Table(name = "face_profile")
@@ -54,19 +63,21 @@ import lombok.ToString;
 public class FaceProfile {
 
     /**
-     * Identificativo univoco.
+     * Identificativo del profilo.
      */
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(
+        strategy = GenerationType.IDENTITY
+    )
     private Integer id;
 
     /**
      * Cliente proprietario del profilo.
-     *
-     * unique = true garantisce un solo FaceProfile
-     * per ogni Customer.
      */
-    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @OneToOne(
+        fetch = FetchType.LAZY,
+        optional = false
+    )
     @JoinColumn(
         name = "customer_id",
         nullable = false,
@@ -118,14 +129,41 @@ public class FaceProfile {
     @Enumerated(EnumType.STRING)
     private Size eyeSize;
 
+    /**
+     * Classificazione generale del colore degli occhi.
+     *
+     * Esempio:
+     *
+     * HAZEL
+     * DARK_BROWN
+     * GREY_BLUE
+     */
     @Enumerated(EnumType.STRING)
     private EyeColor eyeColor;
 
     /**
-     * Permette di descrivere colori complessi.
+     * Colore HEX utilizzato come riferimento visivo
+     * reale degli occhi della cliente.
      *
      * Esempio:
-     * "Verde-grigio con anello centrale ambrato".
+     *
+     * #80603E
+     *
+     * Questo valore completa la classificazione EyeColor,
+     * senza sostituirla.
+     */
+    @Column(
+        name = "eye_reference_color",
+        length = 7
+    )
+    private String eyeReferenceColor;
+
+    /**
+     * Eventuali dettagli sul colore degli occhi.
+     *
+     * Esempio:
+     *
+     * "Nocciola con anello verde esterno".
      */
     @Column(length = 1000)
     private String eyeColorNotes;
@@ -219,35 +257,27 @@ public class FaceProfile {
 
     /*
      * ============================================================
-     * NOTE
+     * NOTE E OBIETTIVI
      * ============================================================
      */
 
-    /**
-     * Osservazioni libere del professionista.
-     */
     @Column(length = 2000)
     private String notes;
 
-    /**
-     * Obiettivo estetico/stilistico espresso
-     * durante la consulenza.
-     *
-     * Esempio:
-     * "Valorizzare gli zigomi e ridurre visivamente
-     * la verticalità del volto".
-     */
-    @Column(length = 2000)
+    @Column(
+        name = "styling_goals",
+        length = 2000
+    )
     private String stylingGoals;
 
-    /**
-     * Data di creazione.
+    /*
+     * ============================================================
+     * TIMESTAMP
+     * ============================================================
      */
+
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
-    /**
-     * Data dell'ultima modifica.
-     */
     private LocalDateTime updatedAt;
 }

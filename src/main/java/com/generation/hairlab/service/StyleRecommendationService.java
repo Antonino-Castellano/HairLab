@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 
 import com.generation.hairlab.dto.RecommendationItemDto;
@@ -47,9 +48,13 @@ public class StyleRecommendationService {
 
     private final ColorAnalysisRepository colorAnalysisRepository;
 
+
+    
+
     /**
      * Genera i suggerimenti in tempo reale.
      */
+    @Transactional(readOnly = true)
     public StyleRecommendationDto generate(
             Integer customerId)
             throws ServiceException {
