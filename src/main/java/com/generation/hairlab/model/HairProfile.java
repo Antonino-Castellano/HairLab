@@ -84,9 +84,11 @@ public class HairProfile {
     @Column(nullable = false)
     private PhysicalValue density;
 
-    /** Livello di salute dei capelli. */
+    /**
+     * Condizione generale e stato di salute del capello.
+     */
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "hair_condition")
     private HairCondition hairCondition;
 
     /**
