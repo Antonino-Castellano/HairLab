@@ -43,7 +43,7 @@ public class HairProfileService {
 
     /** Cerca la scheda associata a uno specifico cliente. */
     public HairProfileDto findByCustomerId(Integer customerId) throws ServiceException {
-        HairProfile profile = hairProfileRepository.findByCustomer_Id(customerId)
+        HairProfile profile = hairProfileRepository.findByCustomerId(customerId)
                 .orElseThrow(() -> new ServiceException(
                         "HairProfile non trovata per il cliente: " + customerId));
 
@@ -58,7 +58,7 @@ public class HairProfileService {
      */
     public HairProfileDto insert(HairProfileDto dto) throws ServiceException {
 
-        if (hairProfileRepository.existsByCustomer_Id(dto.getCustomerId())) {
+        if (hairProfileRepository.existsByCustomerId(dto.getCustomerId())) {
             throw new ServiceException("Il cliente possiede già una HairProfile");
         }
 
@@ -78,7 +78,7 @@ public class HairProfileService {
 
         if (!profile.getCustomer().getId().equals(dto.getCustomerId())) {
 
-            if (hairProfileRepository.existsByCustomer_Id(dto.getCustomerId())) {
+            if (hairProfileRepository.existsByCustomerId(dto.getCustomerId())) {
                 throw new ServiceException(
                         "Il nuovo cliente possiede già una HairProfile");
             }
