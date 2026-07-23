@@ -1,10 +1,9 @@
 package com.generation.hairlab.service;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
-import org.springframework.stereotype.Service;
 import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.generation.hairlab.dto.AppointmentItemDto;
@@ -21,222 +20,424 @@ import com.generation.hairlab.repository.SalonProductRepository;
 import lombok.RequiredArgsConstructor;
 
 /**
- * Service dedicato ai singoli servizi contenuti negli appuntamenti.
+ * Service dedicato ai singoli servizi
+ * contenuti negli appuntamenti.
  *
- * È il punto in cui vengono risolte le tre relazioni del DTO:
- * appointmentId, salonProductId ed employeeId.
+ * La regola di sovrapposizione operatori
+ * NON è più duplicata qui:
  *
- * Contiene inoltre la regola di controllo delle sovrapposizioni
- * degli impegni di un operatore.
+ * viene delegata ad AppointmentAvailabilityService.
+ *
+ * In questo modo:
+ *
+ * - verifica preventiva frontend;
+ * - insert;
+ * - update;
+ *
+ * utilizzano la stessa identica regola.
  */
 @Service
 @RequiredArgsConstructor
 public class AppointmentItemService {
-    
-    private final AppointmentItemRepository appointmentItemRepository;
-    
-    private final AppointmentRepository appointmentRepository;
-    
-    private final SalonProductRepository salonProductRepository;
 
-    private final EmployeeRepository employeeRepository;
+    private final AppointmentItemRepository
+        appointmentItemRepository;
 
-    private final AppointmentItemMapper appointmentItemMapper;
+    private final AppointmentRepository
+        appointmentRepository;
 
-    /** Restituisce tutti gli item. */
+    private final SalonProductRepository
+        salonProductRepository;
+
+    private final EmployeeRepository
+        employeeRepository;
+
+    private final AppointmentItemMapper
+        appointmentItemMapper;
+
+    private final AppointmentAvailabilityService
+        appointmentAvailabilityService;
+
+    /**
+     * Restituisce tutti gli item.
+     */
     @Transactional(readOnly = true)
     public List<AppointmentItemDto> findAll() {
-        return appointmentItemMapper.toDtoList(appointmentItemRepository.findAll());
-    }
 
-    /** Cerca un item tramite ID. */
-    @Transactional(readOnly = true)
-    public AppointmentItemDto findById(Integer id) throws ServiceException {
-        return appointmentItemMapper.toDto(getAppointmentItemById(id));
-    }
-
-    /** Restituisce gli item appartenenti a un appuntamento. */
-    @Transactional(readOnly = true)
-    public List<AppointmentItemDto> findByAppointment(Integer appointmentId) {
         return appointmentItemMapper.toDtoList(
-                appointmentItemRepository
-                        .findByAppointment_IdOrderByScheduledTimeAsc(appointmentId));
+            appointmentItemRepository.findAll()
+        );
     }
 
     /**
-     * Inserisce un AppointmentItem.
-     *
-     * Recupera le Entity collegate, verifica che dipendente e servizio
-     * siano attivi e controlla che l'operatore non abbia sovrapposizioni.
+     * Cerca un item tramite ID.
      */
-    @Transactional
-    public AppointmentItemDto insert(AppointmentItemDto dto)
-            throws ServiceException {
-
-        Appointment appointment = getAppointment(dto.getAppointmentId());
-        SalonProduct salonProduct = getSalonProduct(dto.getSalonProductId());
-        Employee employee = getEmployee(dto.getEmployeeId());
-
-        validateDuration(dto.getDuration());
-        validateEmployeeAvailability(
-                null,
-                employee.getId(),
-                dto.getScheduledTime(),
-                dto.getDuration());
-
-        AppointmentItem item = appointmentItemMapper.toEntity(dto);
-
-        item.setAppointment(appointment);
-        item.setSalonProduct(salonProduct);
-        item.setEmployee(employee);
-
-        return appointmentItemMapper.toDto(appointmentItemRepository.save(item));
-    }
-
-    /** Aggiorna un AppointmentItem esistente. */
-    @Transactional
-    public AppointmentItemDto update(Integer id, AppointmentItemDto dto)
-            throws ServiceException {
-
-        AppointmentItem item = getAppointmentItemById(id);
-
-        Appointment appointment = getAppointment(dto.getAppointmentId());
-        SalonProduct salonProduct = getSalonProduct(dto.getSalonProductId());
-        Employee employee = getEmployee(dto.getEmployeeId());
-
-        validateDuration(dto.getDuration());
-        validateEmployeeAvailability(
-                id,
-                employee.getId(),
-                dto.getScheduledTime(),
-                dto.getDuration());
-
-        item.setAppointment(appointment);
-        item.setSalonProduct(salonProduct);
-        item.setEmployee(employee);
-        item.setScheduledTime(dto.getScheduledTime());
-        item.setDuration(dto.getDuration());
-        item.setAgreedPrice(dto.getAgreedPrice());
-        item.setResultNotes(dto.getResultNotes());
-        item.setCompletedAt(dto.getCompletedAt());
-
-        return appointmentItemMapper.toDto(appointmentItemRepository.save(item));
-    }
-
-    /** Elimina un AppointmentItem tramite ID. */
-    @Transactional
-    public void delete(Integer id) throws ServiceException {
-        appointmentItemRepository.delete(getAppointmentItemById(id));
-    }
-
-    /** Restituisce la Entity AppointmentItem tramite ID. */
     @Transactional(readOnly = true)
-    public AppointmentItem getAppointmentItemById(Integer id)
+    public AppointmentItemDto findById(
+            Integer id)
             throws ServiceException {
 
-        return appointmentItemRepository.findById(id)
-                .orElseThrow(() -> new ServiceException(
-                        "AppointmentItem non trovato con id: " + id,
-                        HttpStatus.NOT_FOUND));
+        return appointmentItemMapper.toDto(
+            getAppointmentItemById(
+                id
+            )
+        );
     }
 
     /**
-     * Verifica che il dipendente non abbia già un servizio sovrapposto.
-     *
-     * Due intervalli si sovrappongono quando:
-     * nuovoInizio < fineEsistente
-     * e
-     * nuovaFine > inizioEsistente
+     * Restituisce gli item
+     * di un appuntamento.
      */
-    private void validateEmployeeAvailability(
-            Integer currentItemId,
-            Integer employeeId,
-            LocalDateTime newStart,
-            int duration) throws ServiceException {
+    @Transactional(readOnly = true)
+    public List<AppointmentItemDto>
+        findByAppointment(
+            Integer appointmentId
+        ) {
 
-        if (newStart == null) {
-            throw new ServiceException("L'orario del servizio è obbligatorio");
+        return appointmentItemMapper.toDtoList(
+            appointmentItemRepository
+                .findByAppointment_IdOrderByScheduledTimeAsc(
+                    appointmentId
+                )
+        );
+    }
+
+    /**
+     * Inserisce un servizio appuntamento.
+     */
+    @Transactional
+    public AppointmentItemDto insert(
+            AppointmentItemDto dto)
+            throws ServiceException {
+
+        if (
+            dto == null
+        ) {
+
+            throw new ServiceException(
+                "I dati del servizio appuntamento sono obbligatori",
+                HttpStatus.BAD_REQUEST
+            );
         }
 
-        LocalDateTime newEnd = newStart.plusMinutes(duration);
+        Appointment appointment =
+            getAppointment(
+                dto.getAppointmentId()
+            );
+
+        SalonProduct salonProduct =
+            getSalonProduct(
+                dto.getSalonProductId()
+            );
+
+        Employee employee =
+            getEmployee(
+                dto.getEmployeeId()
+            );
+
+        validateDuration(
+            dto.getDuration()
+        );
 
         /*
-         * Si cerca una finestra ampia un giorno intorno all'orario richiesto.
-         * La verifica precisa dell'overlap viene poi effettuata nel Service,
-         * considerando anche la durata di ogni AppointmentItem.
+         * Controllo autoritativo.
+         *
+         * Anche se il frontend ha già verificato
+         * la disponibilità, il backend ricontrolla.
          */
-        List<AppointmentItem> items =
-                appointmentItemRepository
-                        .findByEmployee_IdAndScheduledTimeBetweenOrderByScheduledTimeAsc(
-                                employeeId,
-                                newStart.minusDays(1),
-                                newEnd.plusDays(1));
+        appointmentAvailabilityService
+            .validateEmployeeAvailability(
+                employee.getId(),
+                dto.getScheduledTime(),
+                dto.getDuration(),
+                null
+            );
 
-        for (AppointmentItem existing : items) {
+        AppointmentItem item =
+            appointmentItemMapper.toEntity(
+                dto
+            );
 
-            if (currentItemId != null && existing.getId().equals(currentItemId)) {
-                continue;
-            }
+        item.setAppointment(
+            appointment
+        );
 
-            LocalDateTime existingStart = existing.getScheduledTime();
-            LocalDateTime existingEnd =
-                    existingStart.plusMinutes(existing.getDuration());
+        item.setSalonProduct(
+            salonProduct
+        );
 
-            boolean overlap =
-                    newStart.isBefore(existingEnd)
-                    && newEnd.isAfter(existingStart);
+        item.setEmployee(
+            employee
+        );
 
-            if (overlap) {
-                throw new ServiceException(
-                        "Il dipendente è già occupato nell'orario richiesto",
-                        HttpStatus.CONFLICT);
-            }
-        }
+        return appointmentItemMapper.toDto(
+            appointmentItemRepository.save(
+                item
+            )
+        );
     }
 
-    /** Verifica che la durata sia positiva. */
-    private void validateDuration(int duration) throws ServiceException {
-        if (duration <= 0) {
-            throw new ServiceException("La durata del servizio deve essere maggiore di zero");
-        }
+    /**
+     * Aggiorna un AppointmentItem.
+     */
+    @Transactional
+    public AppointmentItemDto update(
+            Integer id,
+            AppointmentItemDto dto)
+            throws ServiceException {
+
+        AppointmentItem item =
+            getAppointmentItemById(
+                id
+            );
+
+        Appointment appointment =
+            getAppointment(
+                dto.getAppointmentId()
+            );
+
+        SalonProduct salonProduct =
+            getSalonProduct(
+                dto.getSalonProductId()
+            );
+
+        Employee employee =
+            getEmployee(
+                dto.getEmployeeId()
+            );
+
+        validateDuration(
+            dto.getDuration()
+        );
+
+        appointmentAvailabilityService
+            .validateEmployeeAvailability(
+                employee.getId(),
+                dto.getScheduledTime(),
+                dto.getDuration(),
+                id
+            );
+
+        item.setAppointment(
+            appointment
+        );
+
+        item.setSalonProduct(
+            salonProduct
+        );
+
+        item.setEmployee(
+            employee
+        );
+
+        item.setScheduledTime(
+            dto.getScheduledTime()
+        );
+
+        item.setDuration(
+            dto.getDuration()
+        );
+
+        item.setAgreedPrice(
+            dto.getAgreedPrice()
+        );
+
+        item.setResultNotes(
+            normalizeNullable(
+                dto.getResultNotes()
+            )
+        );
+
+        item.setCompletedAt(
+            dto.getCompletedAt()
+        );
+
+        return appointmentItemMapper.toDto(
+            appointmentItemRepository.save(
+                item
+            )
+        );
     }
 
-    private Appointment getAppointment(Integer id) throws ServiceException {
-        return appointmentRepository.findById(id)
-                .orElseThrow(() -> new ServiceException(
-                        "Appuntamento non trovato con id: " + id,
-                        HttpStatus.NOT_FOUND));
+    /**
+     * Elimina un item.
+     */
+    @Transactional
+    public void delete(
+            Integer id)
+            throws ServiceException {
+
+        appointmentItemRepository.delete(
+            getAppointmentItemById(
+                id
+            )
+        );
     }
 
-    private SalonProduct getSalonProduct(Integer id) throws ServiceException {
+    /**
+     * Restituisce la Entity.
+     */
+    @Transactional(readOnly = true)
+    public AppointmentItem
+        getAppointmentItemById(
+            Integer id
+        )
+        throws ServiceException {
 
-        SalonProduct product = salonProductRepository.findById(id)
-                .orElseThrow(() -> new ServiceException(
-                        "Servizio non trovato con id: " + id,
-                        HttpStatus.NOT_FOUND));
+        return appointmentItemRepository
+            .findById(
+                id
+            )
+            .orElseThrow(
+                () ->
+                    new ServiceException(
+                        "AppointmentItem non trovato con id: " +
+                            id,
+                        HttpStatus.NOT_FOUND
+                    )
+            );
+    }
 
-        if (!product.isActive()) {
+    private void validateDuration(
+            int duration)
+            throws ServiceException {
+
+        if (
+            duration <= 0
+        ) {
+
             throw new ServiceException(
-                    "Il servizio selezionato non è attivo",
-                    HttpStatus.CONFLICT);
+                "La durata del servizio deve essere maggiore di zero",
+                HttpStatus.BAD_REQUEST
+            );
+        }
+    }
+
+    private Appointment getAppointment(
+            Integer id)
+            throws ServiceException {
+
+        if (
+            id == null
+        ) {
+
+            throw new ServiceException(
+                "L'appuntamento è obbligatorio",
+                HttpStatus.BAD_REQUEST
+            );
+        }
+
+        return appointmentRepository
+            .findById(
+                id
+            )
+            .orElseThrow(
+                () ->
+                    new ServiceException(
+                        "Appuntamento non trovato con id: " +
+                            id,
+                        HttpStatus.NOT_FOUND
+                    )
+            );
+    }
+
+    private SalonProduct getSalonProduct(
+            Integer id)
+            throws ServiceException {
+
+        if (
+            id == null
+        ) {
+
+            throw new ServiceException(
+                "Il servizio è obbligatorio",
+                HttpStatus.BAD_REQUEST
+            );
+        }
+
+        SalonProduct product =
+            salonProductRepository
+                .findById(
+                    id
+                )
+                .orElseThrow(
+                    () ->
+                        new ServiceException(
+                            "Servizio non trovato con id: " +
+                                id,
+                            HttpStatus.NOT_FOUND
+                        )
+                );
+
+        if (
+            !product.isActive()
+        ) {
+
+            throw new ServiceException(
+                "Il servizio selezionato non è attivo",
+                HttpStatus.CONFLICT
+            );
         }
 
         return product;
     }
 
-    private Employee getEmployee(Integer id) throws ServiceException {
+    private Employee getEmployee(
+            Integer id)
+            throws ServiceException {
 
-        Employee employee = employeeRepository.findById(id)
-                .orElseThrow(() -> new ServiceException(
-                        "Dipendente non trovato con id: " + id,
-                        HttpStatus.NOT_FOUND));
+        if (
+            id == null
+        ) {
 
-        if (!employee.isActive()) {
             throw new ServiceException(
-                    "Il dipendente selezionato non è attivo",
-                    HttpStatus.CONFLICT);
+                "Il dipendente è obbligatorio",
+                HttpStatus.BAD_REQUEST
+            );
+        }
+
+        Employee employee =
+            employeeRepository
+                .findById(
+                    id
+                )
+                .orElseThrow(
+                    () ->
+                        new ServiceException(
+                            "Dipendente non trovato con id: " +
+                                id,
+                            HttpStatus.NOT_FOUND
+                        )
+                );
+
+        if (
+            !employee.isActive()
+        ) {
+
+            throw new ServiceException(
+                "Il dipendente selezionato non è attivo",
+                HttpStatus.CONFLICT
+            );
         }
 
         return employee;
+    }
+
+    private String normalizeNullable(
+            String value) {
+
+        if (
+            value == null
+        ) {
+
+            return null;
+        }
+
+        String normalized =
+            value.trim();
+
+        return normalized.isEmpty()
+            ? null
+            : normalized;
     }
 }
