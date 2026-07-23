@@ -1,7 +1,8 @@
 package com.generation.hairlab.dto;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.generation.hairlab.enums.ColorApplicationType;
 import com.generation.hairlab.enums.ColorFormulaStatus;
@@ -10,36 +11,35 @@ import com.generation.hairlab.enums.Oxygen;
 import com.generation.hairlab.enums.Reflection;
 import com.generation.hairlab.enums.ToneLevel;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 /**
- * DTO della formula colore.
+ * Richiesta aggregata del Formula Builder.
  *
- * La formula è collegata direttamente al cliente tramite customerId.
+ * Salva atomicamente:
  *
- * consultationId e appointmentItemId sono opzionali.
+ * ColorFormula
+ * +
+ * tutti i ColorFormulaItem.
+ *
+ * La formula resta sempre collegata
+ * direttamente al Customer.
  */
 @Data
-public class ColorFormulaDto {
+public class ColorFormulaManagementRequestDto {
 
-    private Integer id;
-
-    /**
-     * Cliente proprietario della formula.
-     *
-     * Obbligatorio per ogni nuova formula.
-     */
     @NotNull(
-        message = "Il cliente della formula è obbligatorio"
+        message = "Il cliente è obbligatorio"
     )
     private Integer customerId;
 
-    /** Consulenza opzionale di origine. */
     private Integer consultationId;
 
-    /** AppointmentItem opzionale di utilizzo. */
     private Integer appointmentItemId;
 
     @NotBlank(
@@ -48,20 +48,19 @@ public class ColorFormulaDto {
     private String name;
 
     @NotBlank(
-        message = "Il risultato obiettivo è obbligatorio"
+        message = "L'obiettivo colore è obbligatorio"
     )
     private String targetResult;
 
-    /** Tono target strutturato. */
     private ToneLevel targetToneLevel;
 
-    /** Riflesso target principale. */
     private Reflection targetPrimaryReflection;
 
-    /** Eventuale secondo riflesso target. */
     private Reflection targetSecondaryReflection;
 
-    /** Area / tecnica di applicazione. */
+    @NotNull(
+        message = "Il tipo di applicazione è obbligatorio"
+    )
     private ColorApplicationType applicationType;
 
     @NotNull(
@@ -75,10 +74,16 @@ public class ColorFormulaDto {
     private MixingRatio mixingRatio;
 
     /**
-     * Rapporto developer personalizzato.
+     * Moltiplicatore custom.
      *
-     * Usato soltanto con MixingRatio.CUSTOM.
+     * Esempio:
+     * 1 : 1.8
+     * -> 1.80
      */
+    @DecimalMin(
+        value = "0.01",
+        message = "Il rapporto custom deve essere maggiore di zero"
+    )
     private BigDecimal customDeveloperRatio;
 
     @NotNull(
@@ -88,5 +93,10 @@ public class ColorFormulaDto {
 
     private String notes;
 
-    private LocalDateTime createdAt;
+    @NotEmpty(
+        message = "Inserisci almeno un ingrediente"
+    )
+    @Valid
+    private List<ColorFormulaIngredientRequestDto> ingredients =
+        new ArrayList<>();
 }

@@ -21,51 +21,141 @@ import com.generation.hairlab.service.ServiceException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
-/** Controller REST dedicato alle formule colore. */
+/**
+ * Controller REST delle formule colore.
+ */
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/hairlab/api/color-formula")
 public class ColorFormulaController {
 
-    private final ColorFormulaService colorFormulaService;
+    private final ColorFormulaService
+        colorFormulaService;
 
     @GetMapping
-    public ResponseEntity<List<ColorFormulaDto>> findAll() {
-        return ResponseEntity.ok(colorFormulaService.findAll());
+    public ResponseEntity<List<ColorFormulaDto>>
+        findAll() {
+
+        return ResponseEntity.ok(
+            colorFormulaService.findAll()
+        );
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ColorFormulaDto> findById(
-            @PathVariable Integer id) throws ServiceException {
-        return ResponseEntity.ok(colorFormulaService.findById(id));
+    public ResponseEntity<ColorFormulaDto>
+        findById(
+            @PathVariable
+            Integer id)
+            throws ServiceException {
+
+        return ResponseEntity.ok(
+            colorFormulaService.findById(
+                id
+            )
+        );
+    }
+
+    /**
+     * Storico formule diretto del cliente.
+     */
+    @GetMapping("/customer/{customerId}")
+    public ResponseEntity<List<ColorFormulaDto>>
+        findByCustomer(
+            @PathVariable
+            Integer customerId)
+            throws ServiceException {
+
+        return ResponseEntity.ok(
+            colorFormulaService.findByCustomer(
+                customerId
+            )
+        );
+    }
+
+    /**
+     * Ultima formula con stato USED.
+     */
+    @GetMapping("/customer/{customerId}/latest-used")
+    public ResponseEntity<ColorFormulaDto>
+        findLatestUsedByCustomer(
+            @PathVariable
+            Integer customerId)
+            throws ServiceException {
+
+        return ResponseEntity.ok(
+            colorFormulaService
+                .findLatestUsedByCustomer(
+                    customerId
+                )
+        );
     }
 
     @GetMapping("/consultation/{consultationId}")
-    public ResponseEntity<List<ColorFormulaDto>> findByConsultation(
-            @PathVariable Integer consultationId) {
+    public ResponseEntity<List<ColorFormulaDto>>
+        findByConsultation(
+            @PathVariable
+            Integer consultationId) {
+
         return ResponseEntity.ok(
-                colorFormulaService.findByConsultation(consultationId));
+            colorFormulaService.findByConsultation(
+                consultationId
+            )
+        );
     }
 
     @PostMapping
-    public ResponseEntity<ColorFormulaDto> insert(
-            @Valid @RequestBody ColorFormulaDto dto) throws ServiceException {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(colorFormulaService.insert(dto));
+    public ResponseEntity<ColorFormulaDto>
+        insert(
+            @Valid
+            @RequestBody
+            ColorFormulaDto dto)
+            throws ServiceException {
+
+        return ResponseEntity
+            .status(
+                HttpStatus.CREATED
+            )
+            .body(
+                colorFormulaService.insert(
+                    dto
+                )
+            );
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ColorFormulaDto> update(
-            @PathVariable Integer id,
-            @Valid @RequestBody ColorFormulaDto dto) throws ServiceException {
-        return ResponseEntity.ok(colorFormulaService.update(id, dto));
+    public ResponseEntity<ColorFormulaDto>
+        update(
+            @PathVariable
+            Integer id,
+            @Valid
+            @RequestBody
+            ColorFormulaDto dto)
+            throws ServiceException {
+
+        return ResponseEntity.ok(
+            colorFormulaService.update(
+                id,
+                dto
+            )
+        );
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Map<String, String>> delete(
-            @PathVariable Integer id) throws ServiceException {
-        colorFormulaService.delete(id);
+    public ResponseEntity<Map<String, String>>
+        delete(
+            @PathVariable
+            Integer id)
+            throws ServiceException {
+
+        colorFormulaService.delete(
+            id
+        );
+
         return ResponseEntity.ok(
-                Map.of("message", "Formula colore eliminata correttamente"));
+            Map.of(
+                "message",
+                "Formula colore eliminata correttamente"
+            )
+        );
     }
 }

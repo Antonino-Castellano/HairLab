@@ -102,6 +102,18 @@ public class HairProfileService {
         profile.setReflection(dto.getReflection());
         profile.setHairType(dto.getHairType());
         profile.setTexture(dto.getTexture());
+
+        /*
+         * Compatibilità transitoria:
+         * il frontend attuale non invia ancora hairLength.
+         *
+         * Finché non aggiorniamo il form nel prossimo blocco,
+         * un update non deve cancellare una lunghezza già salvata.
+         */
+        if (dto.getHairLength() != null) {
+            profile.setHairLength(dto.getHairLength());
+        }
+
         profile.setPorosity(dto.getPorosity());
         profile.setDensity(dto.getDensity());
         profile.setHairCondition(dto.getHairCondition());

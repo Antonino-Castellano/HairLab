@@ -1,12 +1,10 @@
 package com.generation.hairlab.service;
 
-import java.util.HashSet;
+import java.math.BigDecimal;
 import java.util.List;
-import java.util.Set;
 
-
-import org.springframework.stereotype.Service;
 import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.generation.hairlab.dto.ColorFormulaItemDto;
@@ -21,145 +19,265 @@ import com.generation.hairlab.repository.HairDyeRepository;
 import lombok.RequiredArgsConstructor;
 
 /**
- * Service dedicato agli elementi delle formule colore.
+ * Service dei singoli ingredienti delle formule.
  *
- * Risolve colorFormulaId e hairDyeIds recuperando le Entity reali
- * dai rispettivi Repository.
+ * Un ColorFormulaItem usa UN SOLO HairDye.
  */
 @Service
 @RequiredArgsConstructor
 public class ColorFormulaItemService {
 
-    
-    private final ColorFormulaItemRepository colorFormulaItemRepository;
+    private final ColorFormulaItemRepository
+        colorFormulaItemRepository;
 
-    private final ColorFormulaRepository colorFormulaRepository;
+    private final ColorFormulaRepository
+        colorFormulaRepository;
 
-    private final HairDyeRepository hairDyeRepository;
+    private final HairDyeRepository
+        hairDyeRepository;
 
-    private final ColorFormulaItemMapper colorFormulaItemMapper;
+    private final ColorFormulaItemMapper
+        colorFormulaItemMapper;
 
-    /** Restituisce tutti gli elementi delle formule. */
     @Transactional(readOnly = true)
     public List<ColorFormulaItemDto> findAll() {
-        return colorFormulaItemMapper.toDtoList(colorFormulaItemRepository.findAll());
-    }
 
-    /** Cerca un elemento tramite ID. */
-    @Transactional(readOnly = true)
-    public ColorFormulaItemDto findById(Integer id) throws ServiceException {
-        return colorFormulaItemMapper.toDto(getColorFormulaItemById(id));
-    }
-
-    /** Restituisce gli item appartenenti a una formula. */
-    @Transactional(readOnly = true)
-    public List<ColorFormulaItemDto> findByFormula(Integer colorFormulaId) {
         return colorFormulaItemMapper.toDtoList(
-                colorFormulaItemRepository.findByColorFormula_Id(colorFormulaId));
+            colorFormulaItemRepository.findAll()
+        );
     }
 
-    /**
-     * Inserisce un nuovo elemento della formula.
-     *
-     * Verifica quantità e presenza delle tinte indicate nel DTO.
-     */
-    @Transactional
-    public ColorFormulaItemDto insert(ColorFormulaItemDto dto)
-            throws ServiceException {
-
-        validateQuantity(dto.getQuantity());
-
-        ColorFormula formula = getColorFormula(dto.getColorFormulaId());
-        Set<HairDye> hairDyes = getHairDyes(dto.getHairDyeIds());
-
-        ColorFormulaItem item = colorFormulaItemMapper.toEntity(dto);
-
-        item.setColorFormula(formula);
-        item.setHairDyes(hairDyes);
-
-        return colorFormulaItemMapper.toDto(
-                colorFormulaItemRepository.save(item));
-    }
-
-    /** Aggiorna un elemento della formula. */
-    @Transactional
-    public ColorFormulaItemDto update(Integer id, ColorFormulaItemDto dto)
-            throws ServiceException {
-
-        ColorFormulaItem item = getColorFormulaItemById(id);
-
-        validateQuantity(dto.getQuantity());
-
-        item.setColorFormula(getColorFormula(dto.getColorFormulaId()));
-        item.setHairDyes(getHairDyes(dto.getHairDyeIds()));
-        item.setQuantity(dto.getQuantity());
-        item.setNotes(dto.getNotes());
-
-        return colorFormulaItemMapper.toDto(
-                colorFormulaItemRepository.save(item));
-    }
-
-    /** Elimina un elemento della formula. */
-    @Transactional
-    public void delete(Integer id) throws ServiceException {
-        colorFormulaItemRepository.delete(getColorFormulaItemById(id));
-    }
-
-    /** Restituisce la Entity ColorFormulaItem tramite ID. */
     @Transactional(readOnly = true)
-    public ColorFormulaItem getColorFormulaItemById(Integer id)
+    public ColorFormulaItemDto findById(
+            Integer id)
             throws ServiceException {
 
-        return colorFormulaItemRepository.findById(id)
-                .orElseThrow(() -> new ServiceException(
-                        "ColorFormulaItem non trovato con id: " + id,
-                        HttpStatus.NOT_FOUND));
+        return colorFormulaItemMapper.toDto(
+            getColorFormulaItemById(
+                id
+            )
+        );
     }
 
-    private ColorFormula getColorFormula(Integer id) throws ServiceException {
-        return colorFormulaRepository.findById(id)
-                .orElseThrow(() -> new ServiceException(
-                        "Formula colore non trovata con id: " + id,
-                        HttpStatus.NOT_FOUND));
+    @Transactional(readOnly = true)
+    public List<ColorFormulaItemDto> findByFormula(
+            Integer colorFormulaId) {
+
+        return colorFormulaItemMapper.toDtoList(
+            colorFormulaItemRepository
+                .findByColorFormula_Id(
+                    colorFormulaId
+                )
+        );
     }
 
-    /**
-     * Recupera tutte le HairDye indicate nel DTO.
-     *
-     * Controlla che il numero di Entity recuperate coincida con il numero
-     * degli ID richiesti, così nessun ID inesistente viene ignorato.
-     */
-    private Set<HairDye> getHairDyes(Set<Integer> ids) throws ServiceException {
+    @Transactional
+    public ColorFormulaItemDto insert(
+            ColorFormulaItemDto dto)
+            throws ServiceException {
 
-        if (ids == null || ids.isEmpty()) {
-            throw new ServiceException(
-                    "È necessario indicare almeno una tinta/prodotto");
-        }
+        validateQuantity(
+            dto.getQuantity()
+        );
 
-        List<HairDye> found = hairDyeRepository.findAllById(ids);
+        ColorFormula formula =
+            getColorFormula(
+                dto.getColorFormulaId()
+            );
 
-        if (found.size() != ids.size()) {
-            throw new ServiceException(
-                    "Uno o più HairDye indicati non esistono",
-                    HttpStatus.NOT_FOUND);
-        }
+        HairDye hairDye =
+            getActiveHairDye(
+                dto.getHairDyeId()
+            );
 
-        for (HairDye hairDye : found) {
-            if (!hairDye.isActive()) {
-                throw new ServiceException(
-                        "Uno o più HairDye selezionati non sono attivi",
-                        HttpStatus.CONFLICT);
-            }
-        }
+        ColorFormulaItem item =
+            colorFormulaItemMapper.toEntity(
+                dto
+            );
 
-        return new HashSet<>(found);
+        item.setColorFormula(
+            formula
+        );
+
+        item.setHairDye(
+            hairDye
+        );
+
+        item.setNotes(
+            normalizeNullable(
+                dto.getNotes()
+            )
+        );
+
+        return colorFormulaItemMapper.toDto(
+            colorFormulaItemRepository.save(
+                item
+            )
+        );
     }
 
-    /** Verifica che la quantità sia maggiore di zero. */
-    private void validateQuantity(double quantity) throws ServiceException {
-        if (quantity <= 0) {
+    @Transactional
+    public ColorFormulaItemDto update(
+            Integer id,
+            ColorFormulaItemDto dto)
+            throws ServiceException {
+
+        ColorFormulaItem item =
+            getColorFormulaItemById(
+                id
+            );
+
+        validateQuantity(
+            dto.getQuantity()
+        );
+
+        item.setColorFormula(
+            getColorFormula(
+                dto.getColorFormulaId()
+            )
+        );
+
+        item.setHairDye(
+            getActiveHairDye(
+                dto.getHairDyeId()
+            )
+        );
+
+        item.setQuantity(
+            dto.getQuantity()
+        );
+
+        item.setUnit(
+            dto.getUnit()
+        );
+
+        item.setNotes(
+            normalizeNullable(
+                dto.getNotes()
+            )
+        );
+
+        return colorFormulaItemMapper.toDto(
+            colorFormulaItemRepository.save(
+                item
+            )
+        );
+    }
+
+    @Transactional
+    public void delete(
+            Integer id)
+            throws ServiceException {
+
+        colorFormulaItemRepository.delete(
+            getColorFormulaItemById(
+                id
+            )
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public ColorFormulaItem getColorFormulaItemById(
+            Integer id)
+            throws ServiceException {
+
+        return colorFormulaItemRepository
+            .findById(
+                id
+            )
+            .orElseThrow(
+                () ->
+                    new ServiceException(
+                        "ColorFormulaItem non trovato con id: "
+                            + id,
+                        HttpStatus.NOT_FOUND
+                    )
+            );
+    }
+
+    private ColorFormula getColorFormula(
+            Integer id)
+            throws ServiceException {
+
+        return colorFormulaRepository
+            .findById(
+                id
+            )
+            .orElseThrow(
+                () ->
+                    new ServiceException(
+                        "Formula colore non trovata con id: "
+                            + id,
+                        HttpStatus.NOT_FOUND
+                    )
+            );
+    }
+
+    private HairDye getActiveHairDye(
+            Integer id)
+            throws ServiceException {
+
+        HairDye hairDye =
+            hairDyeRepository
+                .findById(
+                    id
+                )
+                .orElseThrow(
+                    () ->
+                        new ServiceException(
+                            "Prodotto HairDye non trovato con id: "
+                                + id,
+                            HttpStatus.NOT_FOUND
+                        )
+                );
+
+        if (
+            !hairDye.isActive()
+        ) {
+
             throw new ServiceException(
-                    "La quantità deve essere maggiore di zero");
+                "Il prodotto tecnico selezionato non è attivo",
+                HttpStatus.CONFLICT
+            );
         }
+
+        return hairDye;
+    }
+
+    private void validateQuantity(
+            BigDecimal quantity)
+            throws ServiceException {
+
+        if (
+            quantity == null
+            ||
+            quantity.compareTo(
+                BigDecimal.ZERO
+            ) <= 0
+        ) {
+
+            throw new ServiceException(
+                "La quantità deve essere maggiore di zero",
+                HttpStatus.BAD_REQUEST
+            );
+        }
+    }
+
+    private String normalizeNullable(
+            String value) {
+
+        if (
+            value == null
+        ) {
+
+            return null;
+        }
+
+        String normalized =
+            value.trim();
+
+        return normalized.isEmpty()
+            ? null
+            : normalized;
     }
 }

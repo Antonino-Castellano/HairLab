@@ -1,5 +1,6 @@
 package com.generation.hairlab.utility;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -11,6 +12,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.generation.hairlab.enums.AppointmentStatus;
 import com.generation.hairlab.enums.ColorFormulaStatus;
+import com.generation.hairlab.enums.InventoryUnit;
+import com.generation.hairlab.enums.HairLength;
+import com.generation.hairlab.enums.ColorApplicationType;
 import com.generation.hairlab.enums.ConsultationType;
 import com.generation.hairlab.enums.FeasibilityStatus;
 import com.generation.hairlab.enums.HairTexture;
@@ -32,6 +36,7 @@ import com.generation.hairlab.model.Consultation;
 import com.generation.hairlab.model.Customer;
 import com.generation.hairlab.model.Employee;
 import com.generation.hairlab.model.HairDye;
+import com.generation.hairlab.model.HairDyeInventory;
 import com.generation.hairlab.model.HairProfile;
 import com.generation.hairlab.model.ProductCategory;
 import com.generation.hairlab.model.SalonProduct;
@@ -367,6 +372,55 @@ public class MockDataDb implements CommandLineRunner {
 
         /*
          * ============================================================
+         * 5B. COLOR LAB INVENTORY
+         * ============================================================
+         *
+         * Il catalogo HairDye descrive il prodotto.
+         * HairDyeInventory descrive la giacenza corrente.
+         */
+
+        HairDyeInventory inventory51 = new HairDyeInventory();
+        inventory51.setHairDye(dye51);
+        inventory51.setQuantityAvailable(
+            new BigDecimal("120.00")
+        );
+        inventory51.setUnit(InventoryUnit.GRAM);
+        inventory51.setLowStockThreshold(
+            new BigDecimal("25.00")
+        );
+        inventory51.setUpdatedAt(LocalDateTime.now());
+        entityManager.persist(inventory51);
+
+
+        HairDyeInventory inventory60 = new HairDyeInventory();
+        inventory60.setHairDye(dye60);
+        inventory60.setQuantityAvailable(
+            new BigDecimal("80.00")
+        );
+        inventory60.setUnit(InventoryUnit.GRAM);
+        inventory60.setLowStockThreshold(
+            new BigDecimal("20.00")
+        );
+        inventory60.setUpdatedAt(LocalDateTime.now());
+        entityManager.persist(inventory60);
+
+
+        HairDyeInventory inventoryToner81 = new HairDyeInventory();
+        inventoryToner81.setHairDye(toner81);
+        inventoryToner81.setQuantityAvailable(
+            new BigDecimal("55.00")
+        );
+        inventoryToner81.setUnit(InventoryUnit.GRAM);
+        inventoryToner81.setLowStockThreshold(
+            new BigDecimal("20.00")
+        );
+        inventoryToner81.setUpdatedAt(LocalDateTime.now());
+        entityManager.persist(inventoryToner81);
+
+
+
+        /*
+         * ============================================================
          * 6. HAIR PROFILE
          * ============================================================
          */
@@ -378,6 +432,7 @@ public class MockDataDb implements CommandLineRunner {
         mariaProfile.setReflection(Reflection.GOLD);
         mariaProfile.setHairType(HairType.WAVY);
         mariaProfile.setTexture(HairTexture.FINE);
+        mariaProfile.setHairLength(HairLength.LONG);
         mariaProfile.setHairCondition(HairCondition.DAMAGED);
         mariaProfile.setPorosity(PhysicalValue.HIGH);
         mariaProfile.setDensity(PhysicalValue.MEDIUM);
@@ -411,6 +466,7 @@ public class MockDataDb implements CommandLineRunner {
         giuliaProfile.setReflection(Reflection.NATURAL);
         giuliaProfile.setHairType(HairType.STRAIGHT);
         giuliaProfile.setTexture(HairTexture.MEDIUM);
+        giuliaProfile.setHairLength(HairLength.MEDIUM);
         giuliaProfile.setHairCondition(HairCondition.HEALTHY);
         giuliaProfile.setPorosity(PhysicalValue.LOW);
         giuliaProfile.setDensity(PhysicalValue.HIGH);
@@ -655,12 +711,25 @@ public class MockDataDb implements CommandLineRunner {
          */
 
         ColorFormula formulaMaria = new ColorFormula();
+        formulaMaria.setCustomer(maria);
         formulaMaria.setConsultation(mariaConsultation);
         formulaMaria.setAppointmentItem(itemColor);
         formulaMaria.setName("Formula Maria - Castano Freddo");
         formulaMaria.setTargetResult(
             "Castano chiaro freddo livello 5-6 "
             + "con neutralizzazione dei riflessi caldi."
+        );
+        formulaMaria.setTargetToneLevel(
+            ToneLevel.LEVEL_5_LIGHT_BROWN
+        );
+        formulaMaria.setTargetPrimaryReflection(
+            Reflection.ASH
+        );
+        formulaMaria.setTargetSecondaryReflection(
+            Reflection.NATURAL
+        );
+        formulaMaria.setApplicationType(
+            ColorApplicationType.FULL_HEAD
         );
         formulaMaria.setVolumeDeveloper(Oxygen.VOL_10);
         formulaMaria.setMixingRatio(MixingRatio.RATIO_1_TO_1);
@@ -679,17 +748,20 @@ public class MockDataDb implements CommandLineRunner {
          * 11. COLOR FORMULA ITEM
          * ============================================================
          *
-         * Il Model attuale usa Set<HairDye>.
-         * Per evitare ambiguità sulla quantità, ogni item mock contiene
-         * volutamente un solo HairDye.
+         * Nuova regola Color Lab:
+         *
+         * un item = un HairDye + quantità + unità.
          */
 
         ColorFormulaItem formulaItem51 = new ColorFormulaItem();
         formulaItem51.setColorFormula(formulaMaria);
-        formulaItem51.setHairDyes(
-            new HashSet<>(Set.of(dye51))
+        formulaItem51.setHairDye(dye51);
+        formulaItem51.setQuantity(
+            new BigDecimal("30.00")
         );
-        formulaItem51.setQuantity(30.0);
+        formulaItem51.setUnit(
+            InventoryUnit.GRAM
+        );
         formulaItem51.setNotes(
             "Componente principale freddo."
         );
@@ -698,10 +770,13 @@ public class MockDataDb implements CommandLineRunner {
 
         ColorFormulaItem formulaItem60 = new ColorFormulaItem();
         formulaItem60.setColorFormula(formulaMaria);
-        formulaItem60.setHairDyes(
-            new HashSet<>(Set.of(dye60))
+        formulaItem60.setHairDye(dye60);
+        formulaItem60.setQuantity(
+            new BigDecimal("10.00")
         );
-        formulaItem60.setQuantity(10.0);
+        formulaItem60.setUnit(
+            InventoryUnit.GRAM
+        );
         formulaItem60.setNotes(
             "Componente naturale di supporto."
         );

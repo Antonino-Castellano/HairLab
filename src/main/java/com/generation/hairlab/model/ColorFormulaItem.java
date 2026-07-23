@@ -1,67 +1,87 @@
 package com.generation.hairlab.model;
 
-import java.util.Set;
+import java.math.BigDecimal;
+
+import com.generation.hairlab.enums.InventoryUnit;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.JoinTable;
-import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
 /**
- * Rappresenta un elemento che compone una formula colore.
+ * Singolo ingrediente di una ColorFormula.
  *
- * L'item appartiene a una ColorFormula e, secondo la struttura attualmente
- * scelta dal progetto, può contenere un insieme di HairDye associati a una
- * quantità e a eventuali note tecniche.
+ * REGOLA STRUTTURALE:
+ *
+ * un item = un solo HairDye/prodotto tecnico
+ *         + una quantità precisa
+ *         + una unità di misura.
+ *
+ * Questo elimina l'ambiguità della precedente relazione:
+ *
+ * Set<HairDye> + una sola quantity.
  */
 @Entity
 @Data
 public class ColorFormulaItem {
 
-    /** Identificativo univoco dell'elemento della formula. */
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(
+        strategy = GenerationType.IDENTITY
+    )
     private Integer id;
 
-    /**
-     * Formula colore proprietaria dell'item.
-     *
-     * La relazione è ManyToOne perché una ColorFormula può contenere molti item,
-     * mentre ogni ColorFormulaItem appartiene a una sola formula.
-     */
     @ManyToOne
-    @JoinColumn(name = "colorFormula_id")
+    @JoinColumn(name = "color_formula_id")
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private ColorFormula colorFormula;
 
     /**
-     * Insieme delle tinte associate all'item.
+     * Un solo ingrediente per riga formula.
      *
-     * Poiché il campo è un Set<HairDye>, la relazione viene mappata come
-     * ManyToMany tramite una tabella ponte: uno stesso HairDye può essere
-     * riutilizzato in più item e un item può contenere più HairDye.
+     * Il campo DB resta inizialmente nullable
+     * per permettere l'avvio su database legacy
+     * che possiedono ancora la vecchia tabella ponte.
      *
-     * Questo corregge il precedente OneToMany con JoinColumn, che non descriveva
-     * correttamente una collezione di entità riutilizzabili e avrebbe spostato la
-     * chiave esterna direttamente sulla tabella HairDye.
+     * Il Service lo rende obbligatorio
+     * per tutti i nuovi item.
      */
-    @ManyToMany
-    @JoinTable(
-        name = "color_formula_item_hair_dye",
-        joinColumns = @JoinColumn(name = "color_formula_item_id"),
-        inverseJoinColumns = @JoinColumn(name = "hair_dye_id")
+    @ManyToOne
+    @JoinColumn(name = "hair_dye_id")
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private HairDye hairDye;
+
+    /**
+     * Quantità precisa dell'ingrediente.
+     *
+     * BigDecimal evita gli errori tipici
+     * dei numeri floating point.
+     */
+    @Column(
+        nullable = false,
+        precision = 10,
+        scale = 2
     )
-    private Set<HairDye> hairDyes;
+    private BigDecimal quantity;
 
-    /** Quantità prevista per l'elemento della formula. */
-    @Column(nullable = false)
-    private double quantity;
+    /**
+     * Unità con cui la quantità è espressa.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "unit")
+    private InventoryUnit unit;
 
-    /** Eventuali note relative all'elemento della formula. */
+    /** Note tecniche dell'ingrediente. */
     private String notes;
 }

@@ -3,6 +3,7 @@ package com.generation.hairlab.model;
 import java.util.Set;
 
 import com.generation.hairlab.enums.HairCondition;
+import com.generation.hairlab.enums.HairLength;
 import com.generation.hairlab.enums.HairTexture;
 import com.generation.hairlab.enums.HairType;
 import com.generation.hairlab.enums.PhysicalValue;
@@ -108,6 +109,21 @@ public class HairProfile {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private HairTexture texture;
+
+    /**
+     * Lunghezza tecnica dei capelli.
+     *
+     * Il campo viene introdotto come nullable
+     * per permettere la migrazione sicura dei profili
+     * già presenti nel database.
+     *
+     * I nuovi flussi Color Lab lo utilizzeranno
+     * insieme a densità e spessore per stimare
+     * la quantità di prodotto necessaria.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "hair_length")
+    private HairLength hairLength;
 
     /**
      * Porosità.

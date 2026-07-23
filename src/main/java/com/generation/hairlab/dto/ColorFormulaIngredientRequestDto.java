@@ -9,21 +9,16 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 /**
- * DTO di un singolo ingrediente
- * appartenente a una ColorFormula.
+ * Ingrediente inviato dal Formula Builder.
  *
- * Un item contiene un solo hairDyeId
- * e la sua quantità precisa.
+ * Nel Blocco 3 il Builder lavora in grammatura:
+ *
+ * un prodotto tecnico
+ * +
+ * una quantità precisa.
  */
 @Data
-public class ColorFormulaItemDto {
-
-    private Integer id;
-
-    @NotNull(
-        message = "La formula è obbligatoria"
-    )
-    private Integer colorFormulaId;
+public class ColorFormulaIngredientRequestDto {
 
     @NotNull(
         message = "Il prodotto tecnico è obbligatorio"
@@ -39,6 +34,13 @@ public class ColorFormulaItemDto {
     )
     private BigDecimal quantity;
 
+    /**
+     * Per il Formula Builder manuale
+     * usiamo normalmente GRAM.
+     *
+     * Il campo resta esplicito
+     * per mantenere il dominio estendibile.
+     */
     @NotNull(
         message = "L'unità di misura è obbligatoria"
     )

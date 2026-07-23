@@ -3,6 +3,7 @@ package com.generation.hairlab.dto;
 import java.util.Set;
 
 import com.generation.hairlab.enums.HairCondition;
+import com.generation.hairlab.enums.HairLength;
 import com.generation.hairlab.enums.HairTexture;
 import com.generation.hairlab.enums.HairType;
 import com.generation.hairlab.enums.PhysicalValue;
@@ -46,6 +47,14 @@ public class HairProfileDto {
 
     /** Spessore o texture della fibra capillare. */
     private HairTexture texture;
+
+    /**
+     * Fascia di lunghezza dei capelli.
+     *
+     * È opzionale durante la fase di migrazione
+     * dei profili già esistenti.
+     */
+    private HairLength hairLength;
 
     /** Livello di porosità del capello. */
     private PhysicalValue porosity;

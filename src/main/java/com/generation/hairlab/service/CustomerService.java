@@ -12,6 +12,7 @@ import com.generation.hairlab.mapper.CustomerMapper;
 import com.generation.hairlab.model.Customer;
 import com.generation.hairlab.repository.AppointmentRepository;
 import com.generation.hairlab.repository.ColorAnalysisRepository;
+import com.generation.hairlab.repository.ColorFormulaRepository;
 import com.generation.hairlab.repository.ConsultationRepository;
 import com.generation.hairlab.repository.CustomerRepository;
 import com.generation.hairlab.repository.FaceProfileRepository;
@@ -40,6 +41,7 @@ public class CustomerService {
     private final HairProfileRepository hairProfileRepository;
     private final FaceProfileRepository faceProfileRepository;
     private final ColorAnalysisRepository colorAnalysisRepository;
+    private final ColorFormulaRepository colorFormulaRepository;
     private final CustomerMapper customerMapper;
 
     /**
@@ -180,8 +182,19 @@ public class CustomerService {
         boolean hasHairProfile = hairProfileRepository.existsByCustomerId(id);
         boolean hasFaceProfile = faceProfileRepository.existsByCustomerId(id);
         boolean hasColorAnalysis = colorAnalysisRepository.existsByCustomerId(id);
+        boolean hasColorFormulas =
+            !colorFormulaRepository
+                .findByCustomer_IdOrderByCreatedAtDesc(id)
+                .isEmpty();
 
-        if (hasAppointments || hasConsultations || hasHairProfile || hasFaceProfile || hasColorAnalysis) {
+        if (
+            hasAppointments
+            || hasConsultations
+            || hasHairProfile
+            || hasFaceProfile
+            || hasColorAnalysis
+            || hasColorFormulas
+        ) {
             throw new ServiceException(
                 "Il cliente possiede dati storici e non può essere eliminato definitivamente. Puoi disattivarlo per conservarne lo storico.",
                 HttpStatus.CONFLICT
