@@ -3,8 +3,8 @@ package com.generation.hairlab.service;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import org.springframework.stereotype.Service;
 import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.generation.hairlab.dto.AppointmentDto;
@@ -18,125 +18,421 @@ import com.generation.hairlab.repository.CustomerRepository;
 import lombok.RequiredArgsConstructor;
 
 /**
- * Service dedicato alla gestione degli appuntamenti.
+ * Service base degli appuntamenti.
  *
- * Risolve la relazione con Customer e gestisce i timestamp tecnici.
+ * Da questo blocco lo stato dell'appuntamento
+ * non viene più modificato tramite il normale update().
+ *
+ * Le transizioni di stato vengono gestite da:
+ *
+ * AppointmentWorkflowService
+ *
+ * Questo separa:
+ *
+ * - modifica dati appuntamento;
+ * - avanzamento del ciclo di vita.
  */
 @Service
 @RequiredArgsConstructor
 public class AppointmentService {
 
-    /** Repository degli appuntamenti. */
-    private final AppointmentRepository appointmentRepository;
+    private final AppointmentRepository
+        appointmentRepository;
 
-    /** Repository necessario per risolvere customerId. */
-    private final CustomerRepository customerRepository;
+    private final CustomerRepository
+        customerRepository;
 
-    /** Mapper Appointment <-> AppointmentDto. */
-    private final AppointmentMapper appointmentMapper;
+    private final AppointmentMapper
+        appointmentMapper;
 
-    /** Restituisce tutti gli appuntamenti. */
     @Transactional(readOnly = true)
     public List<AppointmentDto> findAll() {
-        return appointmentMapper.toDtoList(appointmentRepository.findAll());
-    }
 
-    /** Cerca un appuntamento tramite ID. */
-    @Transactional(readOnly = true)
-    public AppointmentDto findById(Integer id) throws ServiceException {
-        return appointmentMapper.toDto(getAppointmentById(id));
-    }
-
-    /** Restituisce lo storico degli appuntamenti di un cliente. */
-    @Transactional(readOnly = true)
-    public List<AppointmentDto> findByCustomer(Integer customerId) {
         return appointmentMapper.toDtoList(
-                appointmentRepository.findByCustomer_IdOrderByStartDateTimeDesc(customerId));
+            appointmentRepository.findAll()
+        );
     }
 
-    /** Restituisce gli appuntamenti con uno specifico stato. */
     @Transactional(readOnly = true)
-    public List<AppointmentDto> findByStatus(AppointmentStatus status) {
-        return appointmentMapper.toDtoList(appointmentRepository.findByStatus(status));
+    public AppointmentDto findById(
+            Integer id)
+            throws ServiceException {
+
+        return appointmentMapper.toDto(
+            getAppointmentById(id)
+        );
     }
 
-    /** Restituisce gli appuntamenti compresi in un intervallo temporale. */
+    @Transactional(readOnly = true)
+    public List<AppointmentDto> findByCustomer(
+            Integer customerId)
+            throws ServiceException {
+
+        ensureCustomerExists(
+            customerId
+        );
+
+        return appointmentMapper.toDtoList(
+            appointmentRepository
+                .findByCustomer_IdOrderByStartDateTimeDesc(
+                    customerId
+                )
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public List<AppointmentDto> findByStatus(
+            AppointmentStatus status)
+            throws ServiceException {
+
+        if (status == null) {
+
+            throw new ServiceException(
+                "Lo stato dell'appuntamento è obbligatorio",
+                HttpStatus.BAD_REQUEST
+            );
+        }
+
+        return appointmentMapper.toDtoList(
+            appointmentRepository.findByStatus(
+                status
+            )
+        );
+    }
+
     @Transactional(readOnly = true)
     public List<AppointmentDto> findBetween(
             LocalDateTime start,
-            LocalDateTime end) {
+            LocalDateTime end)
+            throws ServiceException {
+
+        validateInterval(
+            start,
+            end
+        );
 
         return appointmentMapper.toDtoList(
-                appointmentRepository
-                        .findByStartDateTimeBetweenOrderByStartDateTimeAsc(start, end));
+            appointmentRepository
+                .findByStartDateTimeBetweenOrderByStartDateTimeAsc(
+                    start,
+                    end
+                )
+        );
     }
 
     /**
-     * Inserisce un nuovo appuntamento.
+     * Crea un appuntamento sempre nello stato BOOKED.
      *
-     * Il Customer viene recuperato tramite customerId e i timestamp
-     * vengono gestiti dal backend.
+     * Non accettiamo uno stato arbitrario dal client.
      */
     @Transactional
-    public AppointmentDto insert(AppointmentDto dto) throws ServiceException {
-
-        Customer customer = getCustomer(dto.getCustomerId());
-
-        Appointment appointment = appointmentMapper.toEntity(dto);
-
-        appointment.setCustomer(customer);
-        appointment.setCreatedAt(LocalDateTime.now());
-        appointment.setUpdatedAt(LocalDateTime.now());
-
-        return appointmentMapper.toDto(appointmentRepository.save(appointment));
-    }
-
-    /** Aggiorna un appuntamento esistente. */
-    @Transactional
-    public AppointmentDto update(Integer id, AppointmentDto dto)
+    public AppointmentDto insert(
+            AppointmentDto dto)
             throws ServiceException {
 
-        Appointment appointment = getAppointmentById(id);
-        Customer customer = getCustomer(dto.getCustomerId());
+        validateAppointmentDto(
+            dto
+        );
 
-        appointment.setCustomer(customer);
-        appointment.setStartDateTime(dto.getStartDateTime());
-        appointment.setStatus(dto.getStatus());
-        appointment.setNotes(dto.getNotes());
-        appointment.setUpdatedAt(LocalDateTime.now());
+        Customer customer =
+            getActiveCustomer(
+                dto.getCustomerId()
+            );
 
-        return appointmentMapper.toDto(appointmentRepository.save(appointment));
+        Appointment appointment =
+            appointmentMapper.toEntity(
+                dto
+            );
+
+        appointment.setCustomer(
+            customer
+        );
+
+        appointment.setStatus(
+            AppointmentStatus.BOOKED
+        );
+
+        LocalDateTime now =
+            LocalDateTime.now();
+
+        appointment.setCreatedAt(
+            now
+        );
+
+        appointment.setUpdatedAt(
+            now
+        );
+
+        return appointmentMapper.toDto(
+            appointmentRepository.save(
+                appointment
+            )
+        );
     }
 
-    /** Elimina un appuntamento esistente. */
+    /**
+     * Modifica solamente:
+     *
+     * - cliente;
+     * - data/ora;
+     * - note.
+     *
+     * Lo stato corrente viene preservato.
+     */
     @Transactional
-    public void delete(Integer id) throws ServiceException {
-        appointmentRepository.delete(getAppointmentById(id));
-    }
+    public AppointmentDto update(
+            Integer id,
+            AppointmentDto dto)
+            throws ServiceException {
 
-    /** Restituisce la Entity Appointment tramite ID. */
-    @Transactional(readOnly = true)
-    public Appointment getAppointmentById(Integer id) throws ServiceException {
-        return appointmentRepository.findById(id)
-                .orElseThrow(() -> new ServiceException(
-                        "Appuntamento non trovato con id: " + id,
-                        HttpStatus.NOT_FOUND));
-    }
+        validateAppointmentDto(
+            dto
+        );
 
-    /** Recupera il Customer necessario alla relazione. */
-    private Customer getCustomer(Integer customerId) throws ServiceException {
+        Appointment appointment =
+            getAppointmentById(
+                id
+            );
 
-        Customer customer = customerRepository.findById(customerId)
-                .orElseThrow(() -> new ServiceException(
-                        "Cliente non trovato con id: " + customerId,
-                        HttpStatus.NOT_FOUND));
+        if (
+            appointment.getStatus() !=
+                AppointmentStatus.BOOKED &&
+            appointment.getStatus() !=
+                AppointmentStatus.CONFIRMED
+        ) {
 
-        if (!customer.isActive()) {
             throw new ServiceException(
-                    "Non è possibile creare/modificare un appuntamento per un cliente non attivo",
-                    HttpStatus.CONFLICT);
+                "Solo gli appuntamenti prenotati o confermati possono essere modificati",
+                HttpStatus.CONFLICT
+            );
+        }
+
+        Customer customer =
+            getActiveCustomer(
+                dto.getCustomerId()
+            );
+
+        appointment.setCustomer(
+            customer
+        );
+
+        appointment.setStartDateTime(
+            dto.getStartDateTime()
+        );
+
+        appointment.setNotes(
+            normalizeNullable(
+                dto.getNotes()
+            )
+        );
+
+        appointment.setUpdatedAt(
+            LocalDateTime.now()
+        );
+
+        return appointmentMapper.toDto(
+            appointmentRepository.save(
+                appointment
+            )
+        );
+    }
+
+    /**
+     * DELETE è una cancellazione LOGICA.
+     *
+     * È consentita solamente quando
+     * l'appuntamento non è ancora iniziato.
+     *
+     * BOOKED / CONFIRMED
+     * -> CANCELLED
+     */
+    @Transactional
+    public void delete(
+            Integer id)
+            throws ServiceException {
+
+        Appointment appointment =
+            getAppointmentById(
+                id
+            );
+
+        if (
+            appointment.getStatus() ==
+                AppointmentStatus.CANCELLED
+        ) {
+
+            return;
+        }
+
+        if (
+            appointment.getStatus() !=
+                AppointmentStatus.BOOKED &&
+            appointment.getStatus() !=
+                AppointmentStatus.CONFIRMED
+        ) {
+
+            throw new ServiceException(
+                "Solo un appuntamento prenotato o confermato può essere cancellato",
+                HttpStatus.CONFLICT
+            );
+        }
+
+        appointment.setStatus(
+            AppointmentStatus.CANCELLED
+        );
+
+        appointment.setUpdatedAt(
+            LocalDateTime.now()
+        );
+
+        appointmentRepository.save(
+            appointment
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public Appointment getAppointmentById(
+            Integer id)
+            throws ServiceException {
+
+        return appointmentRepository
+            .findById(
+                id
+            )
+            .orElseThrow(
+                () ->
+                    new ServiceException(
+                        "Appuntamento non trovato con id: " + id,
+                        HttpStatus.NOT_FOUND
+                    )
+            );
+    }
+
+    private Customer getActiveCustomer(
+            Integer customerId)
+            throws ServiceException {
+
+        Customer customer =
+            customerRepository
+                .findById(
+                    customerId
+                )
+                .orElseThrow(
+                    () ->
+                        new ServiceException(
+                            "Cliente non trovato con id: " + customerId,
+                            HttpStatus.NOT_FOUND
+                        )
+                );
+
+        if (
+            !customer.isActive()
+        ) {
+
+            throw new ServiceException(
+                "Non è possibile creare o modificare un appuntamento per un cliente disattivato",
+                HttpStatus.CONFLICT
+            );
         }
 
         return customer;
+    }
+
+    private void ensureCustomerExists(
+            Integer customerId)
+            throws ServiceException {
+
+        if (
+            customerId == null ||
+            !customerRepository.existsById(
+                customerId
+            )
+        ) {
+
+            throw new ServiceException(
+                "Cliente non trovato con id: " + customerId,
+                HttpStatus.NOT_FOUND
+            );
+        }
+    }
+
+    private void validateAppointmentDto(
+            AppointmentDto dto)
+            throws ServiceException {
+
+        if (dto == null) {
+
+            throw new ServiceException(
+                "I dati dell'appuntamento sono obbligatori",
+                HttpStatus.BAD_REQUEST
+            );
+        }
+
+        if (
+            dto.getCustomerId() == null
+        ) {
+
+            throw new ServiceException(
+                "L'id del cliente è obbligatorio",
+                HttpStatus.BAD_REQUEST
+            );
+        }
+
+        if (
+            dto.getStartDateTime() == null
+        ) {
+
+            throw new ServiceException(
+                "La data e ora dell'appuntamento sono obbligatorie",
+                HttpStatus.BAD_REQUEST
+            );
+        }
+    }
+
+    private void validateInterval(
+            LocalDateTime start,
+            LocalDateTime end)
+            throws ServiceException {
+
+        if (
+            start == null ||
+            end == null
+        ) {
+
+            throw new ServiceException(
+                "Data iniziale e data finale sono obbligatorie",
+                HttpStatus.BAD_REQUEST
+            );
+        }
+
+        if (
+            !start.isBefore(
+                end
+            )
+        ) {
+
+            throw new ServiceException(
+                "La data iniziale deve precedere la data finale",
+                HttpStatus.BAD_REQUEST
+            );
+        }
+    }
+
+    private String normalizeNullable(
+            String value) {
+
+        if (
+            value == null
+        ) {
+
+            return null;
+        }
+
+        String normalized =
+            value.trim();
+
+        return normalized.isEmpty()
+            ? null
+            : normalized;
     }
 }
