@@ -31,68 +31,49 @@ public class UserService {
         return userRepo.findByEmail(email);
     }
 
-    public void changePassword(String password) throws ServiceException {
-
-        Authentication authentication = SecurityContextHolder
-                .getContext()
-                .getAuthentication();
-
-        if (authentication == null || authentication.getName() == null) {
-            throw new ServiceException(
-                    "Utente non autenticato",
-                    HttpStatus.UNAUTHORIZED);
+    public UserDto getCurrentUserDto() throws ServiceException {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || auth.getName() == null) {
+            throw new ServiceException("Utente non autenticato", HttpStatus.UNAUTHORIZED);
         }
-
-        if (password == null || password.isBlank()) {
-            throw new ServiceException(
-                    "La nuova password è obbligatoria",
-                    HttpStatus.BAD_REQUEST);
-        }
-
-        String email = authentication.getName();
-        User user = userRepo.findByEmail(email);
-
+        User user = userRepo.findByEmail(auth.getName());
         if (user == null) {
-            throw new ServiceException(
-                    "Utente non trovato",
-                    HttpStatus.NOT_FOUND);
+            throw new ServiceException("Utente non trovato", HttpStatus.NOT_FOUND);
+        }
+        return userMapper.toDto(user);
+    }
+
+    public void changePassword(String password) throws ServiceException {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || auth.getName() == null) {
+            throw new ServiceException("Utente non autenticato", HttpStatus.UNAUTHORIZED);
+        }
+        if (password == null || password.isBlank()) {
+            throw new ServiceException("La nuova password è obbligatoria", HttpStatus.BAD_REQUEST);
+        }
+
+        User user = userRepo.findByEmail(auth.getName());
+        if (user == null) {
+            throw new ServiceException("Utente non trovato", HttpStatus.NOT_FOUND);
         }
 
         if (passwordService.matches(password, user.getPassword())) {
-            throw new ServiceException(
-                    "La nuova password deve essere diversa da quella attuale",
-                    HttpStatus.CONFLICT);
+            throw new ServiceException("La nuova password deve essere diversa da quella attuale", HttpStatus.CONFLICT);
         }
 
         user.setPassword(passwordService.encode(password));
         userRepo.save(user);
     }
 
-    public LoginResponseDto login(LoginRequestDto dto)
-            throws ServiceException {
-
-        if (dto == null
-                || dto.getEmail() == null
-                || dto.getEmail().isBlank()
-                || dto.getPassword() == null
-                || dto.getPassword().isBlank()) {
-
-            throw new ServiceException(
-                    "Email e password sono obbligatorie",
-                    HttpStatus.BAD_REQUEST);
+    public LoginResponseDto login(LoginRequestDto dto) throws ServiceException {
+        if (dto == null || dto.getEmail() == null || dto.getEmail().isBlank() || 
+            dto.getPassword() == null || dto.getPassword().isBlank()) {
+            throw new ServiceException("Email e password sono obbligatorie", HttpStatus.BAD_REQUEST);
         }
 
-        User user = userRepo.findByEmail(
-                dto.getEmail().trim().toLowerCase());
-
-        if (user == null
-                || !passwordService.matches(
-                        dto.getPassword(),
-                        user.getPassword())) {
-
-            throw new ServiceException(
-                    "Credenziali non valide",
-                    HttpStatus.UNAUTHORIZED);
+        User user = userRepo.findByEmail(dto.getEmail().trim().toLowerCase());
+        if (user == null || !passwordService.matches(dto.getPassword(), user.getPassword())) {
+            throw new ServiceException("Credenziali non valide", HttpStatus.UNAUTHORIZED);
         }
 
         LoginResponseDto response = new LoginResponseDto();
@@ -101,25 +82,14 @@ public class UserService {
     }
 
     public UserDto insert(UserDto dto) throws ServiceException {
-
-        if (dto.getEmail() == null || dto.getEmail().isBlank()) {
-            throw new ServiceException(
-                    "Email obbligatoria",
-                    HttpStatus.BAD_REQUEST);
-        }
-
-        if (dto.getPassword() == null || dto.getPassword().isBlank()) {
-            throw new ServiceException(
-                    "Password obbligatoria",
-                    HttpStatus.BAD_REQUEST);
+        if (dto.getEmail() == null || dto.getEmail().isBlank() || 
+            dto.getPassword() == null || dto.getPassword().isBlank()) {
+            throw new ServiceException("Email e password sono obbligatorie", HttpStatus.BAD_REQUEST);
         }
 
         String normalizedEmail = dto.getEmail().trim().toLowerCase();
-
         if (userRepo.findByEmail(normalizedEmail) != null) {
-            throw new ServiceException(
-                    "Esiste già un utente con questa email",
-                    HttpStatus.CONFLICT);
+            throw new ServiceException("Esiste già un utente con questa email", HttpStatus.CONFLICT);
         }
 
         try {
@@ -127,34 +97,20 @@ public class UserService {
             user.setEmail(normalizedEmail);
 
             Role roleToAssign = Role.USER;
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            boolean isAdmin = auth != null && auth.getAuthorities().stream()
+                    .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
 
-            Authentication authentication = SecurityContextHolder
-                    .getContext()
-                    .getAuthentication();
-
-            boolean callerIsAdmin = authentication != null
-                    && authentication
-                            .getAuthorities()
-                            .stream()
-                            .anyMatch(authority ->
-                                    "ROLE_ADMIN".equals(
-                                            authority.getAuthority()));
-
-            if (callerIsAdmin && dto.getRole() != null) {
+            if (isAdmin && dto.getRole() != null) {
                 roleToAssign = dto.getRole();
             }
 
             user.setRole(roleToAssign);
-            user.setPassword(
-                    passwordService.encode(user.getPassword()));
+            user.setPassword(passwordService.encode(user.getPassword()));
 
-            User saved = userRepo.save(user);
-            return userMapper.toDto(saved);
-
-        } catch (Exception exception) {
-            throw new ServiceException(
-                    "Errore durante la creazione dell'utente",
-                    HttpStatus.INTERNAL_SERVER_ERROR);
+            return userMapper.toDto(userRepo.save(user));
+        } catch (Exception e) {
+            throw new ServiceException("Errore durante la creazione dell'utente", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }
