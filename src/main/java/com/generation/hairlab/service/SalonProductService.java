@@ -18,52 +18,38 @@ import lombok.RequiredArgsConstructor;
 /**
  * Service dedicato ai servizi/prodotti presenti nel listino del salone.
  *
- * Risolve la relazione con ProductCategory e usa una cancellazione
- * logica per preservare gli AppointmentItem storici.
+ * Risolve la relazione con ProductCategory e gestisce sia le modifiche di stato
+ * che la cancellazione permanente dei servizi.
  */
 @Service
 @RequiredArgsConstructor
 public class SalonProductService {
 
-    /** Repository dei servizi del salone. */
     private final SalonProductRepository salonProductRepository;
-
-    /** Repository necessario per risolvere productCategoryId. */
     private final ProductCategoryRepository productCategoryRepository;
-
-    /** Mapper SalonProduct <-> SalonProductDto. */
     private final SalonProductMapper salonProductMapper;
 
     /** Restituisce tutti i servizi/prodotti. */
     @Transactional(readOnly = true)
     public List<SalonProductDto> findAll() {
-        return salonProductMapper.toDtoList(
-            salonProductRepository.findAll()
-        );
+        return salonProductMapper.toDtoList(salonProductRepository.findAll());
     }
 
     /** Restituisce solamente i servizi/prodotti attivi. */
     @Transactional(readOnly = true)
     public List<SalonProductDto> findActive() {
-        return salonProductMapper.toDtoList(
-            salonProductRepository.findByActiveTrue()
-        );
+        return salonProductMapper.toDtoList(salonProductRepository.findByActiveTrue());
     }
 
     /** Cerca un servizio tramite ID. */
     @Transactional(readOnly = true)
-    public SalonProductDto findById(Integer id)
-            throws ServiceException {
-        return salonProductMapper.toDto(
-            getSalonProductById(id)
-        );
+    public SalonProductDto findById(Integer id) throws ServiceException {
+        return salonProductMapper.toDto(getSalonProductById(id));
     }
 
     /** Inserisce un nuovo servizio/prodotto. */
     @Transactional
-    public SalonProductDto insert(SalonProductDto dto)
-            throws ServiceException {
-
+    public SalonProductDto insert(SalonProductDto dto) throws ServiceException {
         String normalizedName = normalizeText(dto.getName());
 
         if (salonProductRepository.existsByNameIgnoreCase(normalizedName)) {
@@ -78,23 +64,16 @@ public class SalonProductService {
         validateCommercialValues(dto);
 
         SalonProduct product = salonProductMapper.toEntity(dto);
-
         product.setProductCategory(category);
         product.setName(normalizedName);
         product.setDescription(normalizeNullableText(dto.getDescription()));
 
-        return salonProductMapper.toDto(
-            salonProductRepository.save(product)
-        );
+        return salonProductMapper.toDto(salonProductRepository.save(product));
     }
 
     /** Aggiorna un SalonProduct esistente. */
     @Transactional
-    public SalonProductDto update(
-            Integer id,
-            SalonProductDto dto)
-            throws ServiceException {
-
+    public SalonProductDto update(Integer id, SalonProductDto dto) throws ServiceException {
         SalonProduct product = getSalonProductById(id);
         String normalizedName = normalizeText(dto.getName());
 
@@ -120,36 +99,39 @@ public class SalonProductService {
         product.setBasePrice(dto.getBasePrice());
         product.setActive(dto.isActive());
 
-        return salonProductMapper.toDto(
-            salonProductRepository.save(product)
-        );
+        return salonProductMapper.toDto(salonProductRepository.save(product));
     }
 
     /**
-     * Disattiva logicamente un servizio.
-     *
-     * Gli AppointmentItem già registrati continuano a conservare
-     * il riferimento allo stesso servizio storico.
+     * Eliminazione FISICA e permanente dal database.
      */
     @Transactional
-    public void delete(Integer id)
-            throws ServiceException {
+    public void delete(Integer id) throws ServiceException {
+        if (!salonProductRepository.existsById(id)) {
+            throw new ServiceException(
+                "Servizio non trovato con id: " + id,
+                HttpStatus.NOT_FOUND
+            );
+        }
+        salonProductRepository.deleteById(id);
+    }
 
+    /** Disattiva logicamente un servizio (soft delete). */
+    @Transactional
+    public SalonProductDto deactivate(Integer id) throws ServiceException {
         SalonProduct product = getSalonProductById(id);
 
         if (!product.isActive()) {
-            return;
+            return salonProductMapper.toDto(product);
         }
 
         product.setActive(false);
-        salonProductRepository.save(product);
+        return salonProductMapper.toDto(salonProductRepository.save(product));
     }
 
-    /** Riattiva un servizio solo se la categoria è attiva. */
+    /** Riattiva un servizio solo se la categoria associata è attiva. */
     @Transactional
-    public SalonProductDto activate(Integer id)
-            throws ServiceException {
-
+    public SalonProductDto activate(Integer id) throws ServiceException {
         SalonProduct product = getSalonProductById(id);
         ProductCategory category = product.getProductCategory();
 
@@ -161,66 +143,53 @@ public class SalonProductService {
         }
 
         validateCategoryForState(category, true);
-
         product.setActive(true);
 
-        return salonProductMapper.toDto(
-            salonProductRepository.save(product)
-        );
+        return salonProductMapper.toDto(salonProductRepository.save(product));
     }
 
-    /** Restituisce i servizi appartenenti a una categoria. */
+    /** Alterna lo stato (Attivo <-> Disattivo) del servizio. */
+    @Transactional
+    public SalonProductDto toggleStatus(Integer id) throws ServiceException {
+        SalonProduct product = getSalonProductById(id);
+        if (product.isActive()) {
+            return deactivate(id);
+        } else {
+            return activate(id);
+        }
+    }
+
+    /** Restituisce i servizi appartenenti a una determinata categoria. */
     @Transactional(readOnly = true)
-    public List<SalonProductDto> findByCategory(Integer categoryId)
-            throws ServiceException {
-
-        /*
-         * Verifichiamo prima l'esistenza della categoria,
-         * così un ID inesistente produce 404 e non una lista vuota ambigua.
-         */
+    public List<SalonProductDto> findByCategory(Integer categoryId) throws ServiceException {
         getCategory(categoryId);
-
         return salonProductMapper.toDtoList(
             salonProductRepository.findByProductCategory_Id(categoryId)
         );
     }
 
-    /** Restituisce la Entity SalonProduct tramite ID. */
+    /** Recupera la Entity SalonProduct tramite ID. */
     @Transactional(readOnly = true)
-    public SalonProduct getSalonProductById(Integer id)
-            throws ServiceException {
-
+    public SalonProduct getSalonProductById(Integer id) throws ServiceException {
         return salonProductRepository.findById(id)
-            .orElseThrow(
-                () -> new ServiceException(
-                    "Servizio non trovato con id: " + id,
-                    HttpStatus.NOT_FOUND
-                )
-            );
+            .orElseThrow(() -> new ServiceException(
+                "Servizio non trovato con id: " + id,
+                HttpStatus.NOT_FOUND
+            ));
     }
 
-    /** Recupera la categoria necessaria alla relazione ManyToOne. */
+    /** Recupera la categoria tramite ID. */
     @Transactional(readOnly = true)
-    public ProductCategory getCategory(Integer categoryId)
-            throws ServiceException {
-
+    public ProductCategory getCategory(Integer categoryId) throws ServiceException {
         return productCategoryRepository.findById(categoryId)
-            .orElseThrow(
-                () -> new ServiceException(
-                    "Categoria non trovata con id: " + categoryId,
-                    HttpStatus.NOT_FOUND
-                )
-            );
+            .orElseThrow(() -> new ServiceException(
+                "Categoria non trovata con id: " + categoryId,
+                HttpStatus.NOT_FOUND
+            ));
     }
 
-    /**
-     * Un servizio attivo non può appartenere a una categoria disattivata.
-     */
-    private void validateCategoryForState(
-            ProductCategory category,
-            boolean productActive)
-            throws ServiceException {
-
+    /** Un servizio attivo non può appartenere a una categoria disattivata. */
+    private void validateCategoryForState(ProductCategory category, boolean productActive) throws ServiceException {
         if (productActive && !category.isActive()) {
             throw new ServiceException(
                 "Non è possibile attivare un servizio appartenente a una categoria disattivata",
@@ -229,10 +198,8 @@ public class SalonProductService {
         }
     }
 
-    /** Controlla durata e prezzo prima del salvataggio. */
-    private void validateCommercialValues(SalonProductDto dto)
-            throws ServiceException {
-
+    /** Controlla che durata e prezzo siano validi. */
+    private void validateCommercialValues(SalonProductDto dto) throws ServiceException {
         if (dto.getDuration() <= 0) {
             throw new ServiceException(
                 "La durata del servizio deve essere maggiore di zero",
@@ -249,20 +216,14 @@ public class SalonProductService {
     }
 
     private String normalizeText(String value) {
-        return value == null
-            ? null
-            : value.trim();
+        return value == null ? null : value.trim();
     }
 
     private String normalizeNullableText(String value) {
         if (value == null) {
             return null;
         }
-
         String normalized = value.trim();
-
-        return normalized.isEmpty()
-            ? null
-            : normalized;
+        return normalized.isEmpty() ? null : normalized;
     }
 }

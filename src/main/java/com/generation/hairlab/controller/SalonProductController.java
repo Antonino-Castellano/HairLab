@@ -1,7 +1,6 @@
 package com.generation.hairlab.controller;
 
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -43,9 +42,7 @@ public class SalonProductController {
     @GetMapping("/category/{categoryId}")
     public ResponseEntity<List<SalonProductDto>> findByCategory(
             @PathVariable Integer categoryId) throws ServiceException {
-        return ResponseEntity.ok(
-            salonProductService.findByCategory(categoryId)
-        );
+        return ResponseEntity.ok(salonProductService.findByCategory(categoryId));
     }
 
     @GetMapping("/{id}")
@@ -68,14 +65,19 @@ public class SalonProductController {
         return ResponseEntity.ok(salonProductService.update(id, dto));
     }
 
-    /** Disattiva logicamente il servizio. */
+    /** Eliminazione FISICA e permanente dal database. */
     @DeleteMapping("/{id}")
-    public ResponseEntity<Map<String, String>> delete(
+    public ResponseEntity<Void> delete(
             @PathVariable Integer id) throws ServiceException {
         salonProductService.delete(id);
-        return ResponseEntity.ok(
-            Map.of("message", "Servizio disattivato correttamente")
-        );
+        return ResponseEntity.noContent().build();
+    }
+
+    /** Disattiva logicamente il servizio tramite PATCH. */
+    @PatchMapping("/{id}/deactivate")
+    public ResponseEntity<SalonProductDto> deactivate(
+            @PathVariable Integer id) throws ServiceException {
+        return ResponseEntity.ok(salonProductService.deactivate(id));
     }
 
     /** Riattiva un servizio se la categoria è attiva. */
