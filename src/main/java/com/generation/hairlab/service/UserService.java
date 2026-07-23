@@ -116,7 +116,7 @@ public class UserService {
         }
     }
 
-        public List<UserDto> getAllUsers() throws ServiceException {
+    public List<UserDto> getAllUsers() throws ServiceException {
         try {
             List<User> users = userRepo.findAll();
             return users.stream()
@@ -128,5 +128,32 @@ public class UserService {
                 HttpStatus.INTERNAL_SERVER_ERROR
             );
         }
+    }
+
+    // Aggiorna un utente esistente (usiamo Long o Integer in base al tuo DB, qui Long per coerenza)
+    public UserDto updateUser(Integer id, UserDto userDto) throws ServiceException {
+        User existingUser = userRepo.findById(id)
+                .orElseThrow(() -> new ServiceException("Utente non trovato con ID: " + id, HttpStatus.NOT_FOUND));
+                
+        existingUser.setFirstName(userDto.getFirstName());
+        existingUser.setLastName(userDto.getLastName());
+        existingUser.setEmail(userDto.getEmail());
+        existingUser.setAddress(userDto.getAddress());
+        existingUser.setRole(userDto.getRole());
+        
+        if (userDto.getPassword() != null && !userDto.getPassword().isEmpty()) {
+            existingUser.setPassword(passwordService.encode(userDto.getPassword()));
+        }
+        
+        User updatedUser = userRepo.save(existingUser);
+        return userMapper.toDto(updatedUser);
+    }
+
+    // Elimina un utente per ID
+    public void deleteUser(Integer id) throws ServiceException {
+        if (!userRepo.existsById(id)) {
+            throw new ServiceException("Utente non trovato con ID: " + id, HttpStatus.NOT_FOUND);
+        }
+        userRepo.deleteById(id);
     }
 }
