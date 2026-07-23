@@ -94,43 +94,31 @@ public class UserService {
             throw new ServiceException("Esiste già un utente con questa email", HttpStatus.CONFLICT);
         }
 
-        try {
-            User user = userMapper.toEntity(dto);
-            user.setEmail(normalizedEmail);
+        User user = userMapper.toEntity(dto);
+        user.setEmail(normalizedEmail);
 
-            Role roleToAssign = Role.USER;
-            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            boolean isAdmin = auth != null && auth.getAuthorities().stream()
-                    .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
+        Role roleToAssign = Role.USER;
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        boolean isAdmin = auth != null && auth.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
 
-            if (isAdmin && dto.getRole() != null) {
-                roleToAssign = dto.getRole();
-            }
-
-            user.setRole(roleToAssign);
-            user.setPassword(passwordService.encode(user.getPassword()));
-
-            return userMapper.toDto(userRepo.save(user));
-        } catch (Exception e) {
-            throw new ServiceException("Errore durante la creazione dell'utente", HttpStatus.INTERNAL_SERVER_ERROR);
+        if (isAdmin && dto.getRole() != null) {
+            roleToAssign = dto.getRole();
         }
+
+        user.setRole(roleToAssign);
+        user.setPassword(passwordService.encode(user.getPassword()));
+
+        return userMapper.toDto(userRepo.save(user));
     }
 
     public List<UserDto> getAllUsers() throws ServiceException {
-        try {
-            List<User> users = userRepo.findAll();
-            return users.stream()
-                    .map(userMapper::toDto)
-                    .toList();
-        } catch (Exception e) {
-            throw new ServiceException(
-                "Errore durante il recupero della lista utenti",
-                HttpStatus.INTERNAL_SERVER_ERROR
-            );
-        }
+        List<User> users = userRepo.findAll();
+        return users.stream()
+                .map(userMapper::toDto)
+                .toList();
     }
 
-    // Aggiorna un utente esistente (usiamo Long o Integer in base al tuo DB, qui Long per coerenza)
     public UserDto updateUser(Integer id, UserDto userDto) throws ServiceException {
         User existingUser = userRepo.findById(id)
                 .orElseThrow(() -> new ServiceException("Utente non trovato con ID: " + id, HttpStatus.NOT_FOUND));
@@ -139,6 +127,7 @@ public class UserService {
         existingUser.setLastName(userDto.getLastName());
         existingUser.setEmail(userDto.getEmail());
         existingUser.setAddress(userDto.getAddress());
+        existingUser.setDob(userDto.getDob()); // 👈 Data di nascita inclusa
         existingUser.setRole(userDto.getRole());
         
         if (userDto.getPassword() != null && !userDto.getPassword().isEmpty()) {
