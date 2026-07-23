@@ -22,17 +22,13 @@ public interface CustomerRepository
     /**
      * Cerca un cliente tramite email.
      */
-    Optional<Customer> findByEmail(
-        String email
-    );
+    Optional<Customer> findByEmail(String email);
 
     /**
      * Verifica se esiste già un cliente
      * con una determinata email.
      */
-    boolean existsByEmail(
-        String email
-    );
+    boolean existsByEmail(String email);
 
     /**
      * Restituisce solamente

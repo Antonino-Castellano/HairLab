@@ -16,6 +16,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Lob;
 import lombok.Data;
 
 /**
@@ -81,4 +82,8 @@ public class Employee {
 
     /** Eventuali note interne relative al dipendente. */
     private String notes;
+
+    @Lob
+    @Column(name = "profile_image", columnDefinition = "LONGTEXT")
+    private String profileImage;
 }

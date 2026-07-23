@@ -15,13 +15,9 @@ public class ServiceException extends Exception {
         this(message, HttpStatus.BAD_REQUEST);
     }
 
-    public ServiceException(
-            String message,
-            HttpStatus status) {
+    public ServiceException(String message, HttpStatus status) {
         super(message);
-        this.status = status != null
-                ? status
-                : HttpStatus.BAD_REQUEST;
+        this.status = status != null ? status : HttpStatus.BAD_REQUEST;
     }
 
     public HttpStatus getStatus() {

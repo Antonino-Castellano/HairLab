@@ -26,189 +26,75 @@ import lombok.RequiredArgsConstructor;
  * Controller REST dei clienti.
  *
  * Endpoint principali:
- *
- * GET /customer
- * -> tutti;
- *
- * GET /customer/active
- * -> solo attivi;
- *
- * GET /customer/inactive
- * -> solo disattivati;
- *
- * PATCH /{id}/deactivate
- * -> disattivazione;
- *
- * PATCH /{id}/activate
- * -> riattivazione;
- *
- * DELETE /{id}
- * -> eliminazione fisica definitiva.
+ * GET /customer -> tutti;
+ * GET /customer/active -> solo attivi;
+ * GET /customer/inactive -> solo disattivati;
+ * PATCH /{id}/deactivate -> disattivazione;
+ * PATCH /{id}/activate -> riattivazione;
+ * DELETE /{id} -> eliminazione fisica definitiva.
  */
 @RestController
 @RequiredArgsConstructor
-@RequestMapping(
-    "/hairlab/api/customer"
-)
+@RequestMapping("/hairlab/api/customer")
 public class CustomerController {
 
-    private final CustomerService
-        customerService;
+    private final CustomerService customerService;
 
-    /**
-     * Tutti i clienti.
-     */
+    /** Tutti i clienti. */
     @GetMapping
-    public ResponseEntity<List<CustomerDto>>
-        findAll() {
-
-        return ResponseEntity.ok(
-            customerService.findAll()
-        );
+    public ResponseEntity<List<CustomerDto>> findAll() {
+        return ResponseEntity.ok(customerService.findAll());
     }
 
-    /**
-     * Solo clienti attivi.
-     */
+    /** Solo clienti attivi. */
     @GetMapping("/active")
-    public ResponseEntity<List<CustomerDto>>
-        findActive() {
-
-        return ResponseEntity.ok(
-            customerService.findActive()
-        );
+    public ResponseEntity<List<CustomerDto>> findActive() {
+        return ResponseEntity.ok(customerService.findActive());
     }
 
-    /**
-     * Solo clienti disattivati.
-     */
+    /** Solo clienti disattivati. */
     @GetMapping("/inactive")
-    public ResponseEntity<List<CustomerDto>>
-        findInactive() {
-
-        return ResponseEntity.ok(
-            customerService.findInactive()
-        );
+    public ResponseEntity<List<CustomerDto>> findInactive() {
+        return ResponseEntity.ok(customerService.findInactive());
     }
 
-    /**
-     * Cliente tramite ID.
-     */
+    /** Cliente tramite ID. */
     @GetMapping("/{id}")
-    public ResponseEntity<CustomerDto>
-        findById(
-            @PathVariable Integer id
-        )
-        throws ServiceException {
-
-        return ResponseEntity.ok(
-            customerService.findById(
-                id
-            )
-        );
+    public ResponseEntity<CustomerDto> findById(@PathVariable Integer id) throws ServiceException {
+        return ResponseEntity.ok(customerService.findById(id));
     }
 
-    /**
-     * Nuovo cliente.
-     */
+    /** Nuovo cliente. */
     @PostMapping
-    public ResponseEntity<CustomerDto>
-        insert(
-            @Valid
-            @RequestBody
-            CustomerDto dto
-        )
-        throws ServiceException {
-
-        return ResponseEntity
-            .status(
-                HttpStatus.CREATED
-            )
-            .body(
-                customerService.insert(
-                    dto
-                )
-            );
+    public ResponseEntity<CustomerDto> insert(@Valid @RequestBody CustomerDto dto) throws ServiceException {
+        return ResponseEntity.status(HttpStatus.CREATED).body(customerService.insert(dto));
     }
 
-    /**
-     * Modifica cliente.
-     */
+    /** Modifica cliente. */
     @PutMapping("/{id}")
-    public ResponseEntity<CustomerDto>
-        update(
-            @PathVariable Integer id,
-            @Valid
-            @RequestBody
-            CustomerDto dto
-        )
-        throws ServiceException {
-
-        return ResponseEntity.ok(
-            customerService.update(
-                id,
-                dto
-            )
-        );
+    public ResponseEntity<CustomerDto> update(@PathVariable Integer id, @Valid @RequestBody CustomerDto dto) throws ServiceException {
+        return ResponseEntity.ok(customerService.update(id, dto));
     }
 
-    /**
-     * Disattiva il cliente.
-     */
+    /** Disattiva il cliente. */
     @PatchMapping("/{id}/deactivate")
-    public ResponseEntity<CustomerDto>
-        deactivate(
-            @PathVariable Integer id
-        )
-        throws ServiceException {
-
-        return ResponseEntity.ok(
-            customerService.deactivate(
-                id
-            )
-        );
+    public ResponseEntity<CustomerDto> deactivate(@PathVariable Integer id) throws ServiceException {
+        return ResponseEntity.ok(customerService.deactivate(id));
     }
 
-    /**
-     * Riattiva il cliente.
-     */
+    /** Riattiva il cliente. */
     @PatchMapping("/{id}/activate")
-    public ResponseEntity<CustomerDto>
-        activate(
-            @PathVariable Integer id
-        )
-        throws ServiceException {
-
-        return ResponseEntity.ok(
-            customerService.activate(
-                id
-            )
-        );
+    public ResponseEntity<CustomerDto> activate(@PathVariable Integer id) throws ServiceException {
+        return ResponseEntity.ok(customerService.activate(id));
     }
 
     /**
      * Elimina realmente il cliente.
-     *
-     * Se esiste storico,
-     * il Service restituisce 409 Conflict.
+     * Se esiste storico, il Service restituisce 409 Conflict.
      */
     @DeleteMapping("/{id}")
-    public ResponseEntity<
-        Map<String, String>
-    > delete(
-            @PathVariable Integer id
-        )
-        throws ServiceException {
-
-        customerService.delete(
-            id
-        );
-
-        return ResponseEntity.ok(
-            Map.of(
-                "message",
-                "Cliente eliminato definitivamente"
-            )
-        );
+    public ResponseEntity<Map<String, String>> delete(@PathVariable Integer id) throws ServiceException {
+        customerService.delete(id);
+        return ResponseEntity.ok(Map.of("message", "Cliente eliminato definitivamente"));
     }
 }
