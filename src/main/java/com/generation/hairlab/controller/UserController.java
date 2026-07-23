@@ -1,5 +1,7 @@
 package com.generation.hairlab.controller;
 
+import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -31,5 +33,10 @@ public class UserController {
     @PostMapping
     public ResponseEntity<UserDto> insert(@Valid @RequestBody UserDto userDto) throws ServiceException {
         return ResponseEntity.status(HttpStatus.CREATED).body(userService.insert(userDto));
+    }
+
+    @GetMapping("all")
+    public ResponseEntity<List<UserDto>> getAll() throws ServiceException {
+        return ResponseEntity.ok(userService.getAllUsers());
     }
 }

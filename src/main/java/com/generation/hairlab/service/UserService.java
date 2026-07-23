@@ -1,5 +1,7 @@
 package com.generation.hairlab.service;
 
+import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -111,6 +113,20 @@ public class UserService {
             return userMapper.toDto(userRepo.save(user));
         } catch (Exception e) {
             throw new ServiceException("Errore durante la creazione dell'utente", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+        public List<UserDto> getAllUsers() throws ServiceException {
+        try {
+            List<User> users = userRepo.findAll();
+            return users.stream()
+                    .map(userMapper::toDto)
+                    .toList();
+        } catch (Exception e) {
+            throw new ServiceException(
+                "Errore durante il recupero della lista utenti",
+                HttpStatus.INTERNAL_SERVER_ERROR
+            );
         }
     }
 }
