@@ -5,7 +5,6 @@ import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-
 import com.generation.hairlab.enums.AppointmentStatus;
 import com.generation.hairlab.model.Appointment;
 
@@ -62,4 +61,5 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Intege
     List<Appointment> findByCustomer_IdAndStatusOrderByStartDateTimeDesc(
             Integer customerId,
             AppointmentStatus status);
+
 }

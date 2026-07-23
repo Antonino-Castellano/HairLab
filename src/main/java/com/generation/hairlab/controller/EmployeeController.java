@@ -41,39 +41,36 @@ public class EmployeeController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<EmployeeDto> findById(
-            @PathVariable Integer id) throws ServiceException {
+    public ResponseEntity<EmployeeDto> findById(@PathVariable Integer id) throws ServiceException {
         return ResponseEntity.ok(employeeService.findById(id));
     }
 
     @PostMapping
-    public ResponseEntity<EmployeeDto> insert(
-            @Valid @RequestBody EmployeeDto dto) throws ServiceException {
-        return ResponseEntity.status(HttpStatus.CREATED)
-            .body(employeeService.insert(dto));
+    public ResponseEntity<EmployeeDto> insert(@Valid @RequestBody EmployeeDto dto) throws ServiceException {
+        return ResponseEntity.status(HttpStatus.CREATED).body(employeeService.insert(dto));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<EmployeeDto> update(
-            @PathVariable Integer id,
-            @Valid @RequestBody EmployeeDto dto) throws ServiceException {
+    public ResponseEntity<EmployeeDto> update(@PathVariable Integer id, @Valid @RequestBody EmployeeDto dto) throws ServiceException {
         return ResponseEntity.ok(employeeService.update(id, dto));
     }
 
-    /** Disattiva logicamente il dipendente. */
+    /** Eliminazione/Disattivazione logica del dipendente. */
     @DeleteMapping("/{id}")
-    public ResponseEntity<Map<String, String>> delete(
-            @PathVariable Integer id) throws ServiceException {
+    public ResponseEntity<Map<String, String>> delete(@PathVariable Integer id) throws ServiceException {
         employeeService.delete(id);
-        return ResponseEntity.ok(
-            Map.of("message", "Dipendente disattivato correttamente")
-        );
+        return ResponseEntity.ok(Map.of("message", "Dipendente eliminato correttamente"));
     }
 
     /** Riattiva un dipendente disattivato. */
     @PatchMapping("/{id}/activate")
-    public ResponseEntity<EmployeeDto> activate(
-            @PathVariable Integer id) throws ServiceException {
+    public ResponseEntity<EmployeeDto> activate(@PathVariable Integer id) throws ServiceException {
         return ResponseEntity.ok(employeeService.activate(id));
+    }
+
+    /** Disattiva un dipendente attivo. */
+    @PatchMapping("/{id}/deactivate")
+    public ResponseEntity<EmployeeDto> deactivate(@PathVariable Integer id) throws ServiceException {
+        return ResponseEntity.ok(employeeService.deactivate(id));
     }
 }
