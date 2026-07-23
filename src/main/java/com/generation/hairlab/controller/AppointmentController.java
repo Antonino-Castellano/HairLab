@@ -1,7 +1,6 @@
 package com.generation.hairlab.controller;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Map;
 
 import org.springframework.format.annotation.DateTimeFormat;
@@ -34,58 +33,109 @@ public class AppointmentController {
     private final AppointmentService appointmentService;
 
     @GetMapping
-    public ResponseEntity<List<AppointmentDto>> findAll() {
-        return ResponseEntity.ok(appointmentService.findAll());
+    public ResponseEntity<?> findAll() {
+        try {
+            return ResponseEntity.ok(appointmentService.findAll());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Errore durante il recupero degli appuntamenti: " + e.getMessage()));
+        }
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<AppointmentDto> findById(
-            @PathVariable Integer id) throws ServiceException {
-        return ResponseEntity.ok(appointmentService.findById(id));
+    public ResponseEntity<?> findById(@PathVariable Integer id) {
+        try {
+            return ResponseEntity.ok(appointmentService.findById(id));
+        } catch (ServiceException e) {
+            return ResponseEntity.status(e.getStatus())
+                    .body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Errore del server: " + e.getMessage()));
+        }
     }
 
     @GetMapping("/customer/{customerId}")
-    public ResponseEntity<List<AppointmentDto>> findByCustomer(
-            @PathVariable Integer customerId) {
-        return ResponseEntity.ok(appointmentService.findByCustomer(customerId));
+    public ResponseEntity<?> findByCustomer(@PathVariable Integer customerId) {
+        try {
+            return ResponseEntity.ok(appointmentService.findByCustomer(customerId));
+        } catch (ServiceException e) {
+            return ResponseEntity.status(e.getStatus())
+                    .body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Errore durante la ricerca per cliente: " + e.getMessage()));
+        }
     }
 
     @GetMapping("/status/{status}")
-    public ResponseEntity<List<AppointmentDto>> findByStatus(
-            @PathVariable AppointmentStatus status) {
-        return ResponseEntity.ok(appointmentService.findByStatus(status));
+    public ResponseEntity<?> findByStatus(@PathVariable AppointmentStatus status) {
+        try {
+            return ResponseEntity.ok(appointmentService.findByStatus(status));
+        } catch (ServiceException e) {
+            return ResponseEntity.status(e.getStatus())
+                    .body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Errore durante la ricerca per stato: " + e.getMessage()));
+        }
     }
 
     @GetMapping("/between")
-    public ResponseEntity<List<AppointmentDto>> findBetween(
-            @RequestParam
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-            LocalDateTime start,
-            @RequestParam
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-            LocalDateTime end) {
-        return ResponseEntity.ok(appointmentService.findBetween(start, end));
+    public ResponseEntity<?> findBetween(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end) {
+        try {
+            return ResponseEntity.ok(appointmentService.findBetween(start, end));
+        } catch (ServiceException e) {
+            return ResponseEntity.status(e.getStatus())
+                    .body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Errore durante la ricerca per intervallo di date: " + e.getMessage()));
+        }
     }
 
     @PostMapping
-    public ResponseEntity<AppointmentDto> insert(
-            @Valid @RequestBody AppointmentDto dto) throws ServiceException {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(appointmentService.insert(dto));
+    public ResponseEntity<?> insert(@Valid @RequestBody AppointmentDto dto) {
+        try {
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(appointmentService.insert(dto));
+        } catch (ServiceException e) {
+            return ResponseEntity.status(e.getStatus())
+                    .body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Errore durante l'inserimento dell'appuntamento: " + e.getMessage()));
+        }
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<AppointmentDto> update(
+    public ResponseEntity<?> update(
             @PathVariable Integer id,
-            @Valid @RequestBody AppointmentDto dto) throws ServiceException {
-        return ResponseEntity.ok(appointmentService.update(id, dto));
+            @Valid @RequestBody AppointmentDto dto) {
+        try {
+            return ResponseEntity.ok(appointmentService.update(id, dto));
+        } catch (ServiceException e) {
+            return ResponseEntity.status(e.getStatus())
+                    .body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Errore durante l'aggiornamento dell'appuntamento: " + e.getMessage()));
+        }
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Map<String, String>> delete(
-            @PathVariable Integer id) throws ServiceException {
-        appointmentService.delete(id);
-        return ResponseEntity.ok(
-                Map.of("message", "Appuntamento eliminato correttamente"));
+    public ResponseEntity<?> delete(@PathVariable Integer id) {
+        try {
+            appointmentService.delete(id);
+            return ResponseEntity.ok(Map.of("message", "Appuntamento eliminato correttamente"));
+        } catch (ServiceException e) {
+            return ResponseEntity.status(e.getStatus())
+                    .body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Errore durante l'eliminazione dell'appuntamento: " + e.getMessage()));
+        }
     }
 }

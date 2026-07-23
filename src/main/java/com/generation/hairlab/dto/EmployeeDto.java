@@ -6,6 +6,7 @@ import java.util.Set;
 import com.generation.hairlab.enums.JobTitle;
 import com.generation.hairlab.enums.Specialization;
 
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 /**
@@ -48,4 +49,7 @@ public class EmployeeDto {
 
     /** Eventuali note interne relative al dipendente. */
     private String notes;
+
+    @Size(max = 2_000_000, message = "L'immagine del profilo è troppo grande")
+    private String profileImage;
 }

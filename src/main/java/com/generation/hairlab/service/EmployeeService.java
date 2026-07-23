@@ -103,6 +103,7 @@ public class EmployeeService {
         employee.setSpecializations(dto.getSpecializations());
         employee.setHireDate(dto.getHireDate());
         employee.setNotes(dto.getNotes());
+        employee.setProfileImage(dto.getProfileImage());
 
         Employee saved = employeeRepository.save(employee);
         return employeeMapper.toDto(saved);
